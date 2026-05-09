@@ -1,0 +1,9 @@
+[project]
+name = "imdb-sentiment-analysis"
+version = "0.1.0"
+description = "IU DLBAIPNLP01 – NLP Project - Sentiment Analysis on Movie Reviews"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "python-dotenv==1.1.0",
+]
