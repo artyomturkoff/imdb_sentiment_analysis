@@ -11,9 +11,15 @@ except ImportError:
 
 bootstrap()
 
-from src.config import METRICS_DIR, MODELS_DIR, VARIANT_ORDER, ensure_project_dirs
+from src.config import (
+    FIGURES_DIR,
+    METRICS_DIR,
+    MODELS_DIR,
+    VARIANT_ORDER,
+    ensure_project_dirs,
+)
 from src.data_loader import load_imdb_dataset, load_tier_data
-from src.evaluate import save_json
+from src.evaluate import plot_confusion_matrix, plot_tier_model_performance, save_json
 from src.experiment import choose_best_variant
 from src.train_baseline import MODEL_NAME as BASELINE_NAME
 from src.train_baseline import train_and_evaluate_baseline
@@ -37,24 +43,42 @@ def run(*, force_splits: bool = False, save_models: bool = False) -> dict:
             if save_models
             else None
         )
-        _, baseline_run = train_and_evaluate_baseline(
+        baseline_model, baseline_run = train_and_evaluate_baseline(
             tier_data,
             variant=variant,
             save_model_path=baseline_path,
         )
         runs.append(baseline_run)
+        baseline_predictions = [
+            int(value) for value in baseline_model.predict(tier_data.test_texts)
+        ]
+        plot_confusion_matrix(
+            tier_data.test_labels,
+            baseline_predictions,
+            title=f"Small-tier baseline NB variant {variant.upper()} confusion matrix",
+            output_path=FIGURES_DIR
+            / f"small_{BASELINE_NAME}_{variant}_confusion_matrix.png",
+        )
 
         main_path = (
             MODELS_DIR / f"{MAIN_NAME}_small_{variant}.joblib"
             if save_models
             else None
         )
-        _, main_run = train_and_evaluate_main(
+        main_model, main_run = train_and_evaluate_main(
             tier_data,
             variant=variant,
             save_model_path=main_path,
         )
         runs.append(main_run)
+        main_predictions = [int(value) for value in main_model.predict(tier_data.test_texts)]
+        plot_confusion_matrix(
+            tier_data.test_labels,
+            main_predictions,
+            title=f"Small-tier main LR variant {variant.upper()} confusion matrix",
+            output_path=FIGURES_DIR
+            / f"small_{MAIN_NAME}_{variant}_confusion_matrix.png",
+        )
 
     selected_variant = choose_best_variant(runs)
     payload = {
@@ -65,6 +89,10 @@ def run(*, force_splits: bool = False, save_models: bool = False) -> dict:
         "runs": runs,
     }
     save_json(METRICS_DIR / "small.json", payload)
+    plot_tier_model_performance(
+        payload,
+        FIGURES_DIR / "small_model_performance.png",
+    )
     return payload
 
 

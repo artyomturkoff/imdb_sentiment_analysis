@@ -154,6 +154,108 @@ def plot_performance_by_tier(metrics_paths: list[Path], output_path: Path) -> No
     plt.close()
 
 
+def plot_tier_model_performance(
+    payload: dict,
+    output_path: Path,
+    *,
+    split: str = "test",
+    metric: str = "f1",
+) -> None:
+    """Save a bar chart comparing all model runs inside one tier."""
+
+    rows = []
+    for run in payload.get("runs", []):
+        score = run.get(split, {}).get(metric)
+        if score is None:
+            continue
+        label = f"{run.get('model', 'model')}\nvariant {str(run.get('variant', '')).upper()}"
+        rows.append((label, float(score), str(run.get("model", ""))))
+
+    if not rows:
+        return
+
+    labels, scores, model_names = zip(*rows)
+    colours = [model_colour(model_name) for model_name in model_names]
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    width = max(7, len(rows) * 1.15)
+    plt.figure(figsize=(width, 4.5))
+    bars = plt.bar(labels, scores, color=colours)
+    plt.ylim(0.0, 1.0)
+    plt.ylabel(metric.upper() if metric == "f1" else metric.title())
+    plt.title(f"{payload.get('tier', 'Tier').title()} tier {split} {metric.upper()} comparison")
+    for bar, score in zip(bars, scores):
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            min(score + 0.02, 0.98),
+            f"{score:.3f}",
+            ha="center",
+            va="bottom",
+        )
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+
+def plot_all_model_results(
+    metrics_paths: list[Path],
+    output_path: Path,
+    *,
+    split: str = "test",
+    metric: str = "f1",
+) -> None:
+    """Compare all saved model runs across all tiers."""
+
+    rows = []
+    for path in metrics_paths:
+        if not path.exists():
+            continue
+        payload = load_json(path)
+        tier = str(payload.get("tier", path.stem))
+        for run in payload.get("runs", []):
+            score = run.get(split, {}).get(metric)
+            if score is None:
+                continue
+            model_name = str(run.get("model", "model"))
+            variant = str(run.get("variant", "")).upper()
+            label = f"{tier}\n{model_name}\n{variant}"
+            rows.append((label, float(score), model_name))
+
+    if not rows:
+        return
+
+    labels, scores, model_names = zip(*rows)
+    colours = [model_colour(model_name) for model_name in model_names]
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    width = max(9, len(rows) * 0.95)
+    plt.figure(figsize=(width, 5))
+    bars = plt.bar(labels, scores, color=colours)
+    plt.ylim(0.0, 1.0)
+    plt.ylabel(metric.upper() if metric == "f1" else metric.title())
+    plt.title(f"All model runs by {split} {metric.upper()}")
+    for bar, score in zip(bars, scores):
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            min(score + 0.02, 0.98),
+            f"{score:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+
+def model_colour(model_name: str) -> str:
+    if model_name == "baseline_nb":
+        return "#5b8def"
+    if model_name == "main_lr":
+        return "#47a878"
+    return "#8f8f8f"
+
+
 def write_error_analysis(
     model,
     texts: list[str],

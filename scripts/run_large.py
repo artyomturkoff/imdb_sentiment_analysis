@@ -22,7 +22,7 @@ from src.config import (
 from src.data_loader import load_imdb_dataset, load_tier_data
 from src.evaluate import (
     plot_confusion_matrix,
-    plot_performance_by_tier,
+    plot_tier_model_performance,
     save_json,
     write_error_analysis,
 )
@@ -48,11 +48,22 @@ def run(*, variant: str | None = None, force_splits: bool = False) -> dict:
         force_rebuild_splits=force_splits,
     )
 
-    _, baseline_run = train_and_evaluate_baseline(
+    baseline_model, baseline_run = train_and_evaluate_baseline(
         tier_data,
         variant=selected_variant,
         save_model_path=MODELS_DIR / "baseline_nb.joblib",
     )
+    baseline_predictions = [
+        int(value) for value in baseline_model.predict(tier_data.test_texts)
+    ]
+    plot_confusion_matrix(
+        tier_data.test_labels,
+        baseline_predictions,
+        title=f"Large-tier baseline NB variant {selected_variant.upper()} confusion matrix",
+        output_path=FIGURES_DIR
+        / f"large_baseline_nb_{selected_variant}_confusion_matrix.png",
+    )
+
     main_model, main_run = train_and_evaluate_main(
         tier_data,
         variant=selected_variant,
@@ -73,6 +84,13 @@ def run(*, variant: str | None = None, force_splits: bool = False) -> dict:
     plot_confusion_matrix(
         tier_data.test_labels,
         predictions,
+        title=f"Large-tier main LR variant {selected_variant.upper()} confusion matrix",
+        output_path=FIGURES_DIR
+        / f"large_main_lr_{selected_variant}_confusion_matrix.png",
+    )
+    plot_confusion_matrix(
+        tier_data.test_labels,
+        predictions,
         title="Large-tier main model confusion matrix",
         output_path=FIGURES_DIR / "confusion_matrix_large.png",
     )
@@ -83,13 +101,9 @@ def run(*, variant: str | None = None, force_splits: bool = False) -> dict:
         RESULTS_DIR / "error_analysis.md",
         limit=25,
     )
-    plot_performance_by_tier(
-        [
-            METRICS_DIR / "small.json",
-            METRICS_DIR / "medium.json",
-            METRICS_DIR / "large.json",
-        ],
-        FIGURES_DIR / "performance_by_tier.png",
+    plot_tier_model_performance(
+        payload,
+        FIGURES_DIR / "large_model_performance.png",
     )
     return payload
 

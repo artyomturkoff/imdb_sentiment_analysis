@@ -11,9 +11,15 @@ except ImportError:
 
 bootstrap()
 
-from src.config import DEFAULT_VARIANT, METRICS_DIR, MODELS_DIR, ensure_project_dirs
+from src.config import (
+    DEFAULT_VARIANT,
+    FIGURES_DIR,
+    METRICS_DIR,
+    MODELS_DIR,
+    ensure_project_dirs,
+)
 from src.data_loader import load_imdb_dataset, load_tier_data
-from src.evaluate import save_json
+from src.evaluate import plot_confusion_matrix, plot_tier_model_performance, save_json
 from src.experiment import load_selected_variant
 from src.preprocess import normalize_variant
 from src.train_baseline import MODEL_NAME as BASELINE_NAME
@@ -47,10 +53,20 @@ def run(
         if save_models
         else None
     )
-    _, baseline_run = train_and_evaluate_baseline(
+    baseline_model, baseline_run = train_and_evaluate_baseline(
         tier_data,
         variant=selected_variant,
         save_model_path=baseline_path,
+    )
+    baseline_predictions = [
+        int(value) for value in baseline_model.predict(tier_data.test_texts)
+    ]
+    plot_confusion_matrix(
+        tier_data.test_labels,
+        baseline_predictions,
+        title=f"Medium-tier baseline NB variant {selected_variant.upper()} confusion matrix",
+        output_path=FIGURES_DIR
+        / f"medium_{BASELINE_NAME}_{selected_variant}_confusion_matrix.png",
     )
 
     main_path = (
@@ -58,10 +74,18 @@ def run(
         if save_models
         else None
     )
-    _, main_run = train_and_evaluate_main(
+    main_model, main_run = train_and_evaluate_main(
         tier_data,
         variant=selected_variant,
         save_model_path=main_path,
+    )
+    main_predictions = [int(value) for value in main_model.predict(tier_data.test_texts)]
+    plot_confusion_matrix(
+        tier_data.test_labels,
+        main_predictions,
+        title=f"Medium-tier main LR variant {selected_variant.upper()} confusion matrix",
+        output_path=FIGURES_DIR
+        / f"medium_{MAIN_NAME}_{selected_variant}_confusion_matrix.png",
     )
 
     runs = [baseline_run, main_run]
@@ -73,6 +97,10 @@ def run(
         "runs": runs,
     }
     save_json(METRICS_DIR / "medium.json", payload)
+    plot_tier_model_performance(
+        payload,
+        FIGURES_DIR / "medium_model_performance.png",
+    )
     return payload
 
 

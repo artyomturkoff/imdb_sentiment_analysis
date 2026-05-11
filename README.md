@@ -10,8 +10,9 @@ The main deliverable is a reproducible classical NLP pipeline:
 - three experiment tiers: small, medium, and large
 - saved metrics, figures, trained models, and a command-line prediction demo
 
-`main.py` is only an optional convenience wrapper. The real project workflow is in the
-scripts below, so the project can be run completely without using `main.py`.
+The project is run through small scripts in the `scripts/` folder. There is no `main.py`
+wrapper, because running the steps one by one makes the experiment order clearer and easier
+to explain in the report.
 
 ## Setup
 
@@ -39,6 +40,7 @@ Run the project in this order:
 python scripts/run_small.py
 python scripts/run_medium.py
 python scripts/run_large.py
+python scripts/compare_results.py
 ```
 
 ### 1. Small Tier
@@ -62,6 +64,9 @@ It trains and evaluates both models for all three preprocessing variants:
 The selected variant is the one with the best validation F1 score for the main Logistic
 Regression model. This selected variant is carried forward to the medium and large tiers.
 
+The script saves `results/metrics/small.json`, a small-tier model comparison plot, and
+confusion matrices for every small-tier model run.
+
 ### 2. Medium Tier
 
 ```bash
@@ -77,6 +82,9 @@ This run uses the selected preprocessing variant from the small tier. It uses:
 It trains the Naive Bayes baseline and the main Logistic Regression model again on the
 medium data. The baseline is not calculated once and reused. It is trained separately for
 each tier, because each tier has a different amount of training data.
+
+The script saves `results/metrics/medium.json`, a medium-tier model comparison plot, and
+confusion matrices for the medium baseline and medium main model.
 
 ### 3. Large Tier
 
@@ -96,19 +104,28 @@ variant. It also saves the final trained models and creates the figures used for
 The large-tier test result is the main result to report, because it uses the full held-out
 IMDb test set.
 
-## Optional Commands
+The script saves `results/metrics/large.json`, the final trained model files, a large-tier
+model comparison plot, confusion matrices for the final baseline and final main model, and
+the error-analysis table.
 
-You can also run the same workflow through `main.py`:
+### 4. Final Comparison
 
 ```bash
-python main.py run-small
-python main.py run-medium
-python main.py run-large
+python scripts/compare_results.py
 ```
 
-This is only a wrapper around the scripts. It is useful, but not required.
+This script does not train any model. It reads the saved metric files from the three tiers
+and creates the final comparison figures. Run it after the small, medium, and large scripts
+have finished.
 
-To regenerate only the performance-by-tier figure from existing metric files:
+It saves:
+
+- `results/figures/all_model_results.png`
+- `results/figures/performance_by_tier.png`
+
+## Optional Command
+
+To regenerate only the older performance-by-tier figure from existing metric files, use:
 
 ```bash
 python scripts/make_figures.py
@@ -132,6 +149,10 @@ The baseline is trained and evaluated separately for each tier:
 - medium tier: baseline and main model are run with the selected variant
 - large tier: final baseline and final main model are run with the selected variant
 
+The final comparison script is separate from training. This is useful because it lets the
+experiment scripts produce their own local outputs, and then the final script collects the
+finished results into report-ready figures.
+
 ## Results And Artefacts
 
 The scripts save outputs in these locations:
@@ -139,8 +160,11 @@ The scripts save outputs in these locations:
 - split indices: `data/splits/small_split.json`, `medium_split.json`, `large_split.json`
 - metrics: `results/metrics/small.json`, `medium.json`, `large.json`
 - final models: `models/baseline_nb.joblib`, `models/main_lr.joblib`
-- final confusion matrix: `results/figures/confusion_matrix_large.png`
-- performance chart: `results/figures/performance_by_tier.png`
+- per-tier performance plots: `results/figures/small_model_performance.png`,
+  `medium_model_performance.png`, `large_model_performance.png`
+- per-model confusion matrices: `results/figures/*_confusion_matrix.png`
+- final all-model comparison: `results/figures/all_model_results.png`
+- main-model tier chart: `results/figures/performance_by_tier.png`
 - error analysis examples: `results/error_analysis.md`
 
 The comparison between models is mainly read from the metric JSON files. Each run contains
@@ -148,9 +172,12 @@ accuracy, precision, recall, F1, ROC-AUC, a confusion matrix, and a classificati
 
 The final visual comparison is:
 
-- `confusion_matrix_large.png`: shows where the final main model is correct or wrong
-- `performance_by_tier.png`: shows how the main model's F1 score changes from small to
-  medium to large
+- `small_model_performance.png`, `medium_model_performance.png`, and
+  `large_model_performance.png`: compare the models inside each tier
+- `*_confusion_matrix.png`: shows correct and wrong predictions for each saved model run
+- `all_model_results.png`: compares all saved model runs across the project
+- `performance_by_tier.png`: shows how the selected main model's F1 score changes from
+  small to medium to large
 
 Generated datasets, saved models, metrics, and figures are ignored by git. Split index
 files in `data/splits/` are kept because they only contain public integer indices and make
@@ -177,6 +204,7 @@ For a clean project run from start to finish, use:
 python scripts/run_small.py
 python scripts/run_medium.py
 python scripts/run_large.py
+python scripts/compare_results.py
 python demo/predict_review.py --text "A slow start, but a powerful ending."
 ```
 
