@@ -1,13 +1,62 @@
-# Python-generated files
+# Python files made while running the code
 __pycache__/
 *.py[oc]
 build/
 dist/
 wheels/
 *.egg-info
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Virtual environments
+# Local Python environments
 .venv
+venv/
+env/
 
-# python-dotenv
+# Secrets and local settings
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.p8
+*.crt
+secrets/
+credentials/
+token.json
+*token*.json
+
+# Local OS and editor files
+.DS_Store
+.vscode/
+.idea/
+
+# Dataset files and local caches
+data/raw/
+data/processed/
+
+# Generated model files
+models/*
+!models/.gitkeep
+*.joblib
+*.pkl
+*.pickle
+checkpoints/
+mlruns/
+wandb/
+
+# Results from local experiment runs
+results/*
+!results/.gitkeep
+!results/README.md
+
+# Notebook runtime files
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak

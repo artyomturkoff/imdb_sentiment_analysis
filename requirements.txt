@@ -1,0 +1,7 @@
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.4
+nltk>=3.8
+matplotlib>=3.8
+datasets>=2.18
+joblib>=1.3
