@@ -38,8 +38,11 @@ Run the project in this order:
 
 ```bash
 python scripts/run_small.py
+python scripts/visualise_results.py --tier small
 python scripts/run_medium.py
+python scripts/visualise_results.py --tier medium
 python scripts/run_large.py
+python scripts/visualise_results.py --tier large
 python scripts/compare_results.py
 ```
 
@@ -67,6 +70,12 @@ Regression model. This selected variant is carried forward to the medium and lar
 The script saves `results/metrics/small.json`, a small-tier model comparison plot, and
 confusion matrices for every small-tier model run.
 
+To create separate charts for each small-tier model after this run:
+
+```bash
+python scripts/visualise_results.py --tier small
+```
+
 ### 2. Medium Tier
 
 ```bash
@@ -85,6 +94,12 @@ each tier, because each tier has a different amount of training data.
 
 The script saves `results/metrics/medium.json`, a medium-tier model comparison plot, and
 confusion matrices for the medium baseline and medium main model.
+
+To create separate charts for each medium-tier model after this run:
+
+```bash
+python scripts/visualise_results.py --tier medium
+```
 
 ### 3. Large Tier
 
@@ -107,6 +122,40 @@ IMDb test set.
 The script saves `results/metrics/large.json`, the final trained model files, a large-tier
 model comparison plot, confusion matrices for the final baseline and final main model, and
 the error-analysis table.
+
+To create separate charts for each large-tier model after this run:
+
+```bash
+python scripts/visualise_results.py --tier large
+```
+
+## Model-by-Model Visualisation
+
+The script `scripts/visualise_results.py` creates separate figures for each saved model
+run. It does not train models again. It reads the metric JSON files and saves:
+
+- one metrics chart per model run
+- one confusion matrix per model run
+
+For one tier:
+
+```bash
+python scripts/visualise_results.py --tier small
+python scripts/visualise_results.py --tier medium
+python scripts/visualise_results.py --tier large
+```
+
+For all tiers after all training scripts have finished:
+
+```bash
+python scripts/visualise_results.py --tier all
+```
+
+By default, it visualises the test results. To visualise validation results instead:
+
+```bash
+python scripts/visualise_results.py --tier all --split validation
+```
 
 ### 4. Final Comparison
 
@@ -163,6 +212,7 @@ The scripts save outputs in these locations:
 - per-tier performance plots: `results/figures/small_model_performance.png`,
   `medium_model_performance.png`, `large_model_performance.png`
 - per-model confusion matrices: `results/figures/*_confusion_matrix.png`
+- per-model metric charts: `results/figures/*_metrics.png`
 - final all-model comparison: `results/figures/all_model_results.png`
 - main-model tier chart: `results/figures/performance_by_tier.png`
 - error analysis examples: `results/error_analysis.md`
@@ -174,6 +224,7 @@ The final visual comparison is:
 
 - `small_model_performance.png`, `medium_model_performance.png`, and
   `large_model_performance.png`: compare the models inside each tier
+- `*_metrics.png`: shows accuracy, precision, recall, F1, and ROC-AUC for one model run
 - `*_confusion_matrix.png`: shows correct and wrong predictions for each saved model run
 - `all_model_results.png`: compares all saved model runs across the project
 - `performance_by_tier.png`: shows how the selected main model's F1 score changes from
@@ -202,8 +253,11 @@ For a clean project run from start to finish, use:
 
 ```bash
 python scripts/run_small.py
+python scripts/visualise_results.py --tier small
 python scripts/run_medium.py
+python scripts/visualise_results.py --tier medium
 python scripts/run_large.py
+python scripts/visualise_results.py --tier large
 python scripts/compare_results.py
 python demo/predict_review.py --text "A slow start, but a powerful ending."
 ```

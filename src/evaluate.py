@@ -16,6 +16,7 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
     accuracy_score,
@@ -246,6 +247,86 @@ def plot_all_model_results(
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
+
+
+def plot_run_metric_summary(
+    run: dict,
+    output_path: Path,
+    *,
+    split: str = "test",
+    title: str | None = None,
+) -> None:
+    """Save accuracy, precision, recall, F1, and ROC-AUC for one model run."""
+
+    split_metrics = run.get(split, {})
+    metric_names = ["accuracy", "precision", "recall", "f1", "roc_auc"]
+    rows = [
+        (metric_name, split_metrics[metric_name])
+        for metric_name in metric_names
+        if metric_name in split_metrics
+    ]
+    if not rows:
+        return
+
+    labels = [pretty_metric_name(metric_name) for metric_name, _ in rows]
+    scores = [float(score) for _, score in rows]
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.figure(figsize=(7, 4))
+    bars = plt.bar(labels, scores, color=model_colour(str(run.get("model", ""))))
+    plt.ylim(0.0, 1.0)
+    plt.ylabel("Score")
+    plt.title(title or model_run_title(run, split, "metric summary"))
+    for bar, score in zip(bars, scores):
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            min(score + 0.02, 0.98),
+            f"{score:.3f}",
+            ha="center",
+            va="bottom",
+        )
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+
+def plot_saved_confusion_matrix(
+    run: dict,
+    output_path: Path,
+    *,
+    split: str = "test",
+    title: str | None = None,
+) -> None:
+    """Save a confusion matrix from metrics already written to JSON."""
+
+    matrix = run.get(split, {}).get("confusion_matrix")
+    if matrix is None:
+        return
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    display = ConfusionMatrixDisplay(
+        confusion_matrix=np.asarray(matrix),
+        display_labels=[LABEL_NAMES[0], LABEL_NAMES[1]],
+    )
+    display.plot(values_format="d", cmap="Blues", colorbar=False)
+    plt.title(title or model_run_title(run, split, "confusion matrix"))
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+
+def model_run_title(run: dict, split: str, suffix: str) -> str:
+    model_name = str(run.get("model", "model"))
+    variant = str(run.get("variant", "")).upper()
+    return f"{model_name} variant {variant} {split} {suffix}"
+
+
+def pretty_metric_name(metric_name: str) -> str:
+    if metric_name == "f1":
+        return "F1"
+    if metric_name == "roc_auc":
+        return "ROC-AUC"
+    return metric_name.title()
 
 
 def model_colour(model_name: str) -> str:
