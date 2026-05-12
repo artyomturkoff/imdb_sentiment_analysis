@@ -1,7 +1,5 @@
 """Use a saved model to predict one review."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 import joblib

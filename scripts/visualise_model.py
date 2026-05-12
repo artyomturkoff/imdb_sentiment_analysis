@@ -1,7 +1,5 @@
 """Visualise validation and/or test results for one trained model."""
 
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
 

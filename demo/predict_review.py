@@ -1,7 +1,5 @@
 """Demo script for predicting the sentiment of one review."""
 
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path

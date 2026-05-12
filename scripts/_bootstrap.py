@@ -1,7 +1,5 @@
 """Make script imports work from the repo root."""
 
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 

@@ -1,7 +1,5 @@
 """Text cleaning steps used before vectorising movie reviews."""
 
-from __future__ import annotations
-
 import html
 import re
 from dataclasses import dataclass

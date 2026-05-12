@@ -1,7 +1,5 @@
 """Small set of paths and constants used by the project scripts."""
 
-from __future__ import annotations
-
 from pathlib import Path
 
 

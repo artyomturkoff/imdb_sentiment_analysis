@@ -1,7 +1,5 @@
 """Compare all saved model-result files by one selected metric."""
 
-from __future__ import annotations
-
 try:
     from _bootstrap import bootstrap
 except ImportError:

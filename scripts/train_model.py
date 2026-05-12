@@ -1,7 +1,5 @@
 """Train baseline and/or main model on one generated subset and variant."""
 
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
 

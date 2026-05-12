@@ -1,7 +1,5 @@
 """Generate one reusable IMDb subset split."""
 
-from __future__ import annotations
-
 import argparse
 
 try:

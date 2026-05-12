@@ -1,7 +1,5 @@
 """Create the two sklearn models used in the project."""
 
-from __future__ import annotations
-
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import MultinomialNB
