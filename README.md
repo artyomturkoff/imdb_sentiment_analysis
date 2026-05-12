@@ -1,7 +1,7 @@
 # IMDb Sentiment Analysis
 
-This is a small college NLP project for sentiment classification of movie reviews. The
-task is binary classification: negative review or positive review.
+This is a IU – NLP Project - Sentiment Analysis on Movie Reviews, course ID: DLBAIPNLP01. The
+task is binary sentiment classification: negative review or positive review.
 
 The project uses the Stanford IMDb dataset from Hugging Face:
 
@@ -21,8 +21,8 @@ There are also three preprocessing variants:
 - `c`: variant `b` plus WordNet lemmatisation
 
 The code was run on a MacBook with an Apple M2 chip and 16 GB memory. This is not a hard
-requirement, but it gives some context for running time. The smaller experiments should be
-fine on most recent laptops.
+requirement, but it gives some context for running time. The experiments should be
+fine on most modern laptops.
 
 ## Project Files
 
