@@ -1,18 +1,23 @@
 # IMDb Sentiment Analysis
 
-This is a small NLP course project for binary sentiment classification of movie reviews.
-It uses the public Stanford IMDb dataset from Hugging Face: `stanfordnlp/imdb`.
+This is a college NLP project for binary sentiment classification of movie reviews. It uses
+the public Stanford IMDb dataset from Hugging Face: `stanfordnlp/imdb`.
 
-The main deliverable is a reproducible classical NLP pipeline:
+The project now uses a more manual and flexible workflow. Instead of one fixed script for
+small, medium, and large experiments, you create the subset you want, train the variant you
+want, inspect the saved results, and then decide what to run next.
+
+The two core models are:
 
 - baseline model: `CountVectorizer` + `MultinomialNB`
 - main model: `TfidfVectorizer` with unigrams and bigrams + `LogisticRegression`
-- three experiment tiers: small, medium, and large
-- saved metrics, figures, trained models, and a command-line prediction demo
 
-The project is run through small scripts in the `scripts/` folder. There is no `main.py`
-wrapper, because running the steps one by one makes the experiment order clearer and easier
-to explain in the report.
+The preprocessing variants are:
+
+- A: minimal cleaning
+- B: A plus stop-word removal, while keeping negators such as `not`, `no`, `nor`, and
+  `never`
+- C: B plus WordNet lemmatisation
 
 ## Setup
 
@@ -20,7 +25,7 @@ to explain in the report.
 uv sync --extra dev
 ```
 
-Or, with plain `venv` and `pip`:
+Or with plain `venv` and `pip`:
 
 ```bash
 python3 -m venv .venv
@@ -29,243 +34,252 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Use Python 3.11 or newer. The Python install must include normal compression modules
-such as `lzma`, because Hugging Face `datasets` needs them.
+Use Python 3.11 or newer. The Python install must include normal compression modules such
+as `lzma`, because Hugging Face `datasets` needs them.
 
-## Recommended Workflow
+## Dataset Download
 
-Run the project in this order:
+The raw IMDb dataset is not stored in this repository. The folder `data/raw/` is ignored by
+git, because the dataset is downloaded locally from Hugging Face and should not be committed
+to a public repository.
 
-```bash
-python scripts/run_small.py
-python scripts/visualise_results.py --tier small
-python scripts/run_medium.py
-python scripts/visualise_results.py --tier medium
-python scripts/run_large.py
-python scripts/visualise_results.py --tier large
-python scripts/compare_results.py
+The project uses:
+
+```text
+stanfordnlp/imdb
 ```
 
-### 1. Small Tier
+The easiest way to download it is to run the first subset-generation command. The script
+will call Hugging Face `datasets`, download the IMDb data if it is not already cached, and
+then save only the split indices in `data/splits/`:
 
 ```bash
-python scripts/run_small.py
+python scripts/generate_subset.py --subset small --random-seed 42 --train-size 2000 --validation-size 500 --test-size 5000
 ```
 
-This is the first experiment and works like a smoke test. It uses:
+The local cache is stored under:
 
-- 2,000 training reviews
-- 500 validation reviews
-- a fixed 5,000-review test subset
+```text
+data/raw/huggingface/
+```
 
-It trains and evaluates both models for all three preprocessing variants:
-
-- A: minimal cleaning
-- B: cleaning with stop-word removal, while keeping negators
-- C: B plus WordNet lemmatisation
-
-The selected variant is the one with the best validation F1 score for the main Logistic
-Regression model. This selected variant is carried forward to the medium and large tiers.
-
-The script saves `results/metrics/small.json`, a small-tier model comparison plot, and
-confusion matrices for every small-tier model run.
-
-To create separate charts for each small-tier model after this run:
+If you want to download the dataset before running any project script, use:
 
 ```bash
-python scripts/visualise_results.py --tier small
+python -c "from datasets import load_dataset; load_dataset('stanfordnlp/imdb', cache_dir='data/raw/huggingface')"
 ```
 
-### 2. Medium Tier
+After the dataset is cached once, the scripts can reuse the local copy. If the cache is not
+present, the first run needs an internet connection.
+
+## Workflow
+
+The usual order is:
 
 ```bash
-python scripts/run_medium.py
+python scripts/generate_subset.py --subset small --random-seed 42 --train-size 2000 --validation-size 500 --test-size 5000
+python scripts/train_model.py --subset small --variant b
+python scripts/visualise_model.py --model-name small_main_lr_b
+python scripts/compare_results.py --metric f1 --split test
 ```
 
-This run uses the selected preprocessing variant from the small tier. It uses:
+This is intentionally hands-on. After visualising the small results, you can decide which
+variant to use for the medium subset. After visualising medium results, you can decide what
+to use for the large subset.
 
-- 8,000 training reviews
-- 2,000 validation reviews
-- the same fixed 5,000-review test subset as the small tier
+## 1. Generate Subsets
 
-It trains the Naive Bayes baseline and the main Logistic Regression model again on the
-medium data. The baseline is not calculated once and reused. It is trained separately for
-each tier, because each tier has a different amount of training data.
-
-The script saves `results/metrics/medium.json`, a medium-tier model comparison plot, and
-confusion matrices for the medium baseline and medium main model.
-
-To create separate charts for each medium-tier model after this run:
+Create a named split with:
 
 ```bash
-python scripts/visualise_results.py --tier medium
+python scripts/generate_subset.py \
+  --subset small \
+  --random-seed 42 \
+  --train-size 2000 \
+  --validation-size 500 \
+  --test-size 5000
 ```
 
-### 3. Large Tier
+The script saves the split indices to:
+
+```text
+data/splits/<subset>_split.json
+```
+
+Example project sizes:
 
 ```bash
-python scripts/run_large.py
+python scripts/generate_subset.py --subset small --random-seed 42 --train-size 2000 --validation-size 500 --test-size 5000
+python scripts/generate_subset.py --subset medium --random-seed 42 --train-size 8000 --validation-size 2000 --test-size 5000
+python scripts/generate_subset.py --subset large --random-seed 42 --train-size 20000 --validation-size 5000 --test-size all
 ```
 
-This is the final evaluation run. It uses:
+Use `--test-size all` for the full official IMDb test split.
 
-- 20,000 training reviews
-- 5,000 validation reviews
-- the full official 25,000-review IMDb test split
+## 2. Train Models
 
-It trains the final baseline model and the final main model using the selected preprocessing
-variant. It also saves the final trained models and creates the figures used for the report.
-
-The large-tier test result is the main result to report, because it uses the full held-out
-IMDb test set.
-
-The script saves `results/metrics/large.json`, the final trained model files, a large-tier
-model comparison plot, confusion matrices for the final baseline and final main model, and
-the error-analysis table.
-
-To create separate charts for each large-tier model after this run:
+Train both the baseline and main model for one subset and one preprocessing variant:
 
 ```bash
-python scripts/visualise_results.py --tier large
+python scripts/train_model.py --subset small --variant b
 ```
 
-## Model-by-Model Visualisation
+By default, this trains both:
 
-The script `scripts/visualise_results.py` creates separate figures for each saved model
-run. It does not train models again. It reads the metric JSON files and saves:
+- `baseline_nb`
+- `main_lr`
 
-- one metrics chart per model run
-- one confusion matrix per model run
-
-For one tier:
+To train only one model:
 
 ```bash
-python scripts/visualise_results.py --tier small
-python scripts/visualise_results.py --tier medium
-python scripts/visualise_results.py --tier large
+python scripts/train_model.py --subset small --variant b --model main_lr
+python scripts/train_model.py --subset small --variant b --model baseline_nb
 ```
 
-For all tiers after all training scripts have finished:
+Model run names use this format:
+
+```text
+<subset>_<model>_<variant>
+```
+
+For example:
+
+```text
+small_baseline_nb_b
+small_main_lr_b
+```
+
+Training saves:
+
+```text
+models/<subset>_<model>_<variant>.joblib
+results/metrics/<subset>_<model>_<variant>.json
+```
+
+Each metric JSON file contains validation and test results: accuracy, precision, recall,
+F1, ROC-AUC, a confusion matrix, and a classification report.
+
+## 3. Visualise One Model
+
+After training, visualise one model run:
 
 ```bash
-python scripts/visualise_results.py --tier all
+python scripts/visualise_model.py --model-name small_main_lr_b
 ```
 
-By default, it visualises the test results. To visualise validation results instead:
+This creates validation and test figures for that model:
+
+```text
+results/figures/small_main_lr_b_validation_metrics.png
+results/figures/small_main_lr_b_validation_confusion_matrix.png
+results/figures/small_main_lr_b_test_metrics.png
+results/figures/small_main_lr_b_test_confusion_matrix.png
+```
+
+To visualise only one split:
 
 ```bash
-python scripts/visualise_results.py --tier all --split validation
+python scripts/visualise_model.py --model-name small_main_lr_b --split validation
+python scripts/visualise_model.py --model-name small_main_lr_b --split test
 ```
 
-### 4. Final Comparison
+## 4. Compare All Saved Results
+
+Compare all saved model-result files by one metric:
 
 ```bash
-python scripts/compare_results.py
+python scripts/compare_results.py --metric f1 --split test
 ```
 
-This script does not train any model. It reads the saved metric files from the three tiers
-and creates the final comparison figures. Run it after the small, medium, and large scripts
-have finished.
+Other available metrics are:
 
-It saves:
+```text
+accuracy
+precision
+recall
+f1
+roc_auc
+```
 
-- `results/figures/all_model_results.png`
-- `results/figures/performance_by_tier.png`
-
-## Optional Command
-
-To regenerate only the older performance-by-tier figure from existing metric files, use:
+Example:
 
 ```bash
-python scripts/make_figures.py
+python scripts/compare_results.py --metric roc_auc --split validation
 ```
 
-## Training, Evaluation, And Testing
+The comparison plot is saved as:
 
-Training happens inside each tier script. For each model, the pipeline is fitted only on
-the training split for that tier. The vectoriser is inside the scikit-learn `Pipeline`, so it
-is fitted only on training data and does not see validation or test reviews.
+```text
+results/figures/compare_<split>_<metric>.png
+```
 
-Evaluation is done on both validation and test data:
+## Suggested Manual Experiment Path
 
-- validation scores are used for model or preprocessing decisions
-- test scores are saved as reported performance
-- the final large-tier test set should be treated as the main final result
-
-The baseline is trained and evaluated separately for each tier:
-
-- small tier: baseline and main model are both run for variants A, B, and C
-- medium tier: baseline and main model are run with the selected variant
-- large tier: final baseline and final main model are run with the selected variant
-
-The final comparison script is separate from training. This is useful because it lets the
-experiment scripts produce their own local outputs, and then the final script collects the
-finished results into report-ready figures.
-
-## Results And Artefacts
-
-The scripts save outputs in these locations:
-
-- split indices: `data/splits/small_split.json`, `medium_split.json`, `large_split.json`
-- metrics: `results/metrics/small.json`, `medium.json`, `large.json`
-- final models: `models/baseline_nb.joblib`, `models/main_lr.joblib`
-- per-tier performance plots: `results/figures/small_model_performance.png`,
-  `medium_model_performance.png`, `large_model_performance.png`
-- per-model confusion matrices: `results/figures/*_confusion_matrix.png`
-- per-model metric charts: `results/figures/*_metrics.png`
-- final all-model comparison: `results/figures/all_model_results.png`
-- main-model tier chart: `results/figures/performance_by_tier.png`
-- error analysis examples: `results/error_analysis.md`
-
-The comparison between models is mainly read from the metric JSON files. Each run contains
-accuracy, precision, recall, F1, ROC-AUC, a confusion matrix, and a classification report.
-
-The final visual comparison is:
-
-- `small_model_performance.png`, `medium_model_performance.png`, and
-  `large_model_performance.png`: compare the models inside each tier
-- `*_metrics.png`: shows accuracy, precision, recall, F1, and ROC-AUC for one model run
-- `*_confusion_matrix.png`: shows correct and wrong predictions for each saved model run
-- `all_model_results.png`: compares all saved model runs across the project
-- `performance_by_tier.png`: shows how the selected main model's F1 score changes from
-  small to medium to large
-
-Generated datasets, saved models, metrics, and figures are ignored by git. Split index
-files in `data/splits/` are kept because they only contain public integer indices and make
-the runs easier to repeat.
-
-## Demo
-
-After running the large tier, classify one new review with:
+Start with all three variants on the small subset:
 
 ```bash
-python demo/predict_review.py --text "A slow start, but a powerful ending."
+python scripts/generate_subset.py --subset small --random-seed 42 --train-size 2000 --validation-size 500 --test-size 5000
+python scripts/train_model.py --subset small --variant a
+python scripts/train_model.py --subset small --variant b
+python scripts/train_model.py --subset small --variant c
+python scripts/compare_results.py --metric f1 --split validation
 ```
 
-The demo loads `models/main_lr.joblib` and prints a sentiment label with a confidence
-score.
-
-Run `python scripts/run_large.py` first if `models/main_lr.joblib` does not exist.
-
-## Usual Full Run
-
-For a clean project run from start to finish, use:
+Then inspect the models you care about:
 
 ```bash
-python scripts/run_small.py
-python scripts/visualise_results.py --tier small
-python scripts/run_medium.py
-python scripts/visualise_results.py --tier medium
-python scripts/run_large.py
-python scripts/visualise_results.py --tier large
-python scripts/compare_results.py
-python demo/predict_review.py --text "A slow start, but a powerful ending."
+python scripts/visualise_model.py --model-name small_main_lr_b
+python scripts/visualise_model.py --model-name small_main_lr_c
 ```
+
+If A looks weak, you can ignore it and continue with B and C on medium:
+
+```bash
+python scripts/generate_subset.py --subset medium --random-seed 42 --train-size 8000 --validation-size 2000 --test-size 5000
+python scripts/train_model.py --subset medium --variant b
+python scripts/train_model.py --subset medium --variant c
+python scripts/compare_results.py --metric f1 --split validation
+```
+
+After choosing the final variant, train the large model:
+
+```bash
+python scripts/generate_subset.py --subset large --random-seed 42 --train-size 20000 --validation-size 5000 --test-size all
+python scripts/train_model.py --subset large --variant b
+python scripts/visualise_model.py --model-name large_main_lr_b
+python scripts/compare_results.py --metric f1 --split test
+```
+
+The large test result is the main final result to report, because it uses the full official
+IMDb test split.
+
+## Demo Prediction
+
+After training a model, use it for one review:
+
+```bash
+python demo/predict_review.py \
+  --model models/large_main_lr_b.joblib \
+  --text "A slow start, but a powerful ending."
+```
+
+Use the model path that matches the model you selected.
 
 ## Files
 
 - `src/`: reusable dataset, preprocessing, model, evaluation, and prediction code
-- `scripts/`: experiment scripts for the three tiers
+- `scripts/generate_subset.py`: creates named train/validation/test splits
+- `scripts/train_model.py`: trains the baseline and/or main model for one subset and
+  variant
+- `scripts/visualise_model.py`: creates metrics and confusion-matrix figures for one
+  saved model run
+- `scripts/compare_results.py`: compares all saved model-result files by one metric
 - `demo/`: command-line prediction demo
 - `data/splits/`: saved split indices
+- `results/metrics/`: one JSON file per trained model run
+- `results/figures/`: generated plots
+- `models/`: saved model pipelines
 - `MODEL_CARD.md`: short notes about data, model, results, and limits
+
+Generated datasets, saved models, metrics, and figures are ignored by git. Split index
+files are small and reproducible, so they can be kept if needed.

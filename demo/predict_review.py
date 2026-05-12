@@ -23,7 +23,7 @@ def main() -> None:
     model_path = Path(args.model)
     if not model_path.exists():
         raise SystemExit(
-            f"Model not found at {model_path}. Run scripts/run_large.py first."
+            f"Model not found at {model_path}. Train one with scripts/train_model.py first."
         )
 
     pipeline = load_model(model_path)

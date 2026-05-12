@@ -1,4 +1,4 @@
-"""Create final comparison figures from saved experiment metrics."""
+"""Compare all saved model-result files by one selected metric."""
 
 from __future__ import annotations
 
@@ -9,41 +9,49 @@ except ImportError:
 
 bootstrap()
 
-from pathlib import Path
-
 from src.config import FIGURES_DIR, METRICS_DIR, ensure_project_dirs
-from src.evaluate import plot_all_model_results, plot_performance_by_tier
+from src.evaluate import load_json, plot_metric_across_runs
 
 
-METRICS_PATHS = [
-    METRICS_DIR / "small.json",
-    METRICS_DIR / "medium.json",
-    METRICS_DIR / "large.json",
-]
+METRIC_CHOICES = ("accuracy", "precision", "recall", "f1", "roc_auc")
 
 
-def run() -> list[Path]:
+def result_files() -> list:
+    return sorted(
+        path
+        for path in METRICS_DIR.glob("*.json")
+        if path.is_file() and load_json(path).get("run_id")
+    )
+
+
+def run(*, metric: str, split: str) -> list:
     ensure_project_dirs()
-    missing = [path for path in METRICS_PATHS if not path.exists()]
-    if missing:
-        missing_names = ", ".join(str(path) for path in missing)
+    paths = result_files()
+    if not paths:
         raise SystemExit(
-            "Missing metric files. Run the tier scripts first: "
-            "python scripts/run_small.py, python scripts/run_medium.py, "
-            f"python scripts/run_large.py. Missing: {missing_names}"
+            "No model result files found. Train a model first with scripts/train_model.py."
         )
 
-    output_paths = [
-        FIGURES_DIR / "all_model_results.png",
-        FIGURES_DIR / "performance_by_tier.png",
-    ]
-    plot_all_model_results(METRICS_PATHS, output_paths[0])
-    plot_performance_by_tier(METRICS_PATHS, output_paths[1])
+    runs = [load_json(path) for path in paths]
+    output_paths = [FIGURES_DIR / f"compare_{split}_{metric}.png"]
+    plot_metric_across_runs(
+        runs,
+        output_paths[0],
+        split=split,
+        metric=metric,
+    )
     return output_paths
 
 
 def main() -> None:
-    output_paths = run()
+    import argparse
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--metric", default="f1", choices=METRIC_CHOICES)
+    parser.add_argument("--split", default="test", choices=("validation", "test"))
+    args = parser.parse_args()
+
+    output_paths = run(metric=args.metric, split=args.split)
     for path in output_paths:
         print(f"Saved {path}")
 

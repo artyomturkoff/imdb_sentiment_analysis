@@ -2,12 +2,12 @@
 
 Use the saved outputs as report inputs:
 
-- `results/metrics/small.json`
-- `results/metrics/medium.json`
-- `results/metrics/large.json`
-- `results/figures/confusion_matrix_large.png`
-- `results/figures/performance_by_tier.png`
-- `results/error_analysis.md`
+- `results/metrics/<subset>_<model>_<variant>.json`
+- `results/figures/<model-name>_validation_metrics.png`
+- `results/figures/<model-name>_validation_confusion_matrix.png`
+- `results/figures/<model-name>_test_metrics.png`
+- `results/figures/<model-name>_test_confusion_matrix.png`
+- `results/figures/compare_<split>_<metric>.png`
 
 Suggested report structure: goal, data and preprocessing, models, results, error analysis,
 and conclusion.

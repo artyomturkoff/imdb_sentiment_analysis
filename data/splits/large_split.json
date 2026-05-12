@@ -1,8 +1,8 @@
 {
   "dataset": "stanfordnlp/imdb",
+  "subset": "large",
   "tier": "large",
   "random_state": 42,
-  "default_preprocessing_variant": "c",
   "label_names": {
     "0": "negative",
     "1": "positive"

@@ -10,11 +10,9 @@ from sklearn.model_selection import train_test_split
 
 from src.config import (
     DATASET_NAME,
-    DEFAULT_VARIANT,
     HF_CACHE_DIR,
     LABEL_NAMES,
     RANDOM_STATE,
-    TIER_SPECS,
     ensure_project_dirs,
     split_path,
 )
@@ -29,8 +27,8 @@ class RawImdbData:
 
 
 @dataclass(frozen=True)
-class TierData:
-    tier: str
+class SubsetData:
+    subset: str
     train_texts: list[str]
     train_labels: list[int]
     validation_texts: list[str]
@@ -63,39 +61,28 @@ def load_imdb_dataset() -> RawImdbData:
     )
 
 
-def ensure_splits(raw: RawImdbData, *, force: bool = False) -> None:
-    """Create split files if they are not already present."""
-
-    ensure_project_dirs()
-    payloads = build_split_payloads(raw)
-    for tier, payload in payloads.items():
-        path = split_path(tier)
-        if force or not path.exists():
-            write_json(path, payload)
-
-
-def load_tier_data(
-    tier: str,
+def load_subset_data(
+    subset: str,
     *,
     raw: RawImdbData | None = None,
-    force_rebuild_splits: bool = False,
-) -> TierData:
-    """Return the texts and labels for one experiment tier."""
+) -> SubsetData:
+    """Return texts and labels for one generated subset."""
 
-    tier = tier.lower()
-    if tier not in TIER_SPECS:
-        raise ValueError(f"Unknown tier {tier!r}; expected one of {sorted(TIER_SPECS)}")
+    subset = subset.lower()
+    path = split_path(subset)
+    if not path.exists():
+        raise ValueError(
+            f"Unknown subset {subset!r}. Create it first with scripts/generate_subset.py."
+        )
 
     raw = raw or load_imdb_dataset()
-    ensure_splits(raw, force=force_rebuild_splits)
-
-    payload = read_json(split_path(tier))
+    payload = read_json(path)
     train_indices = [int(index) for index in payload["train_indices"]]
     validation_indices = [int(index) for index in payload["validation_indices"]]
     test_indices = [int(index) for index in payload["test_indices"]]
 
-    return TierData(
-        tier=tier,
+    return SubsetData(
+        subset=subset,
         train_texts=select(raw.train_texts, train_indices),
         train_labels=select(raw.train_labels, train_indices),
         validation_texts=select(raw.train_texts, validation_indices),
@@ -109,85 +96,75 @@ def load_tier_data(
     )
 
 
-def build_split_payloads(raw: RawImdbData) -> dict[str, dict]:
-    """Build the three project splits.
+def build_custom_split_payload(
+    raw: RawImdbData,
+    *,
+    subset: str,
+    train_size: int,
+    validation_size: int,
+    test_size: int | None,
+    random_state: int,
+) -> dict:
+    """Build one manually configured train/validation/test split."""
 
-    The official IMDb test set is kept apart. Validation examples come only
-    from the official train split, as described in the project plan.
-    """
+    train_pool_size = train_size + validation_size
+    if train_pool_size > len(raw.train_labels):
+        raise ValueError(
+            f"Train + validation size is {train_pool_size}, but IMDb train has "
+            f"only {len(raw.train_labels)} labelled reviews."
+        )
 
-    train_indices = list(range(len(raw.train_labels)))
-    large_train, large_validation = train_test_split(
-        train_indices,
-        test_size=TIER_SPECS["large"].validation_size,
-        stratify=raw.train_labels,
-        random_state=RANDOM_STATE,
-    )
-
-    medium_train = stratified_subset(
-        large_train,
+    train_pool = stratified_subset(
+        range(len(raw.train_labels)),
         raw.train_labels,
-        TIER_SPECS["medium"].train_size,
+        train_pool_size,
+        random_state=random_state,
     )
-    small_train = stratified_subset(
-        medium_train,
-        raw.train_labels,
-        TIER_SPECS["small"].train_size,
-    )
-    medium_validation = stratified_subset(
-        large_validation,
-        raw.train_labels,
-        TIER_SPECS["medium"].validation_size,
-    )
-    small_validation = stratified_subset(
-        medium_validation,
-        raw.train_labels,
-        TIER_SPECS["small"].validation_size,
-    )
-    fixed_test = stratified_subset(
-        range(len(raw.test_labels)),
-        raw.test_labels,
-        TIER_SPECS["small"].test_size or 0,
+    train_indices, validation_indices = train_test_split(
+        train_pool,
+        train_size=train_size,
+        test_size=validation_size,
+        stratify=[raw.train_labels[index] for index in train_pool],
+        random_state=random_state,
     )
 
-    split_data = {
-        "small": (small_train, small_validation, fixed_test, "official_test_fixed_5000"),
-        "medium": (
-            medium_train,
-            medium_validation,
-            fixed_test,
-            "official_test_fixed_5000",
-        ),
-        "large": (
-            list(large_train),
-            list(large_validation),
-            list(range(len(raw.test_labels))),
-            "official_test_full",
-        ),
+    if test_size is None:
+        test_indices = list(range(len(raw.test_labels)))
+        test_source = "official_test_full"
+    else:
+        test_indices = stratified_subset(
+            range(len(raw.test_labels)),
+            raw.test_labels,
+            test_size,
+            random_state=random_state,
+        )
+        test_source = f"official_test_fixed_{test_size}"
+
+    return {
+        "dataset": DATASET_NAME,
+        "subset": subset,
+        "tier": subset,
+        "random_state": random_state,
+        "label_names": {str(key): value for key, value in LABEL_NAMES.items()},
+        "counts": {
+            "train": len(train_indices),
+            "validation": len(validation_indices),
+            "test": len(test_indices),
+        },
+        "test_source": test_source,
+        "train_indices": [int(index) for index in train_indices],
+        "validation_indices": [int(index) for index in validation_indices],
+        "test_indices": [int(index) for index in test_indices],
     }
 
-    payloads: dict[str, dict] = {}
-    for tier, (tier_train, tier_validation, tier_test, test_source) in split_data.items():
-        payloads[tier] = {
-            "dataset": DATASET_NAME,
-            "tier": tier,
-            "random_state": RANDOM_STATE,
-            "default_preprocessing_variant": DEFAULT_VARIANT,
-            "label_names": {str(key): value for key, value in LABEL_NAMES.items()},
-            "counts": {
-                "train": len(tier_train),
-                "validation": len(tier_validation),
-                "test": len(tier_test),
-            },
-            "test_source": test_source,
-            "train_indices": tier_train,
-            "validation_indices": tier_validation,
-            "test_indices": tier_test,
-        }
-    return payloads
 
-
-def stratified_subset(indices, labels: list[int], size: int) -> list[int]:
+def stratified_subset(
+    indices,
+    labels: list[int],
+    size: int,
+    *,
+    random_state: int = RANDOM_STATE,
+) -> list[int]:
     """Take a smaller balanced subset from a list of dataset indices."""
 
     indices = [int(index) for index in indices]
@@ -200,7 +177,7 @@ def stratified_subset(indices, labels: list[int], size: int) -> list[int]:
         indices,
         train_size=size,
         stratify=[labels[index] for index in indices],
-        random_state=RANDOM_STATE,
+        random_state=random_state,
     )
     return [int(index) for index in subset]
 

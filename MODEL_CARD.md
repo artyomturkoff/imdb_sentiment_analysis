@@ -32,7 +32,7 @@ The final variant should be selected by validation F1. The planned variants are:
 Final numbers are created after running:
 
 ```bash
-python scripts/run_large.py
+python scripts/train_model.py --subset large --variant <a|b|c>
 ```
 
 | Model | Variant | Accuracy | Precision | Recall | F1 | ROC-AUC |
