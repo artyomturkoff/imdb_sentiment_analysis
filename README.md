@@ -31,7 +31,7 @@ Or with plain `venv` and `pip`:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
 Use Python 3.11 or newer. The Python install must include normal compression modules such

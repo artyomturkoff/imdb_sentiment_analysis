@@ -48,7 +48,7 @@ def load_imdb_dataset() -> RawImdbData:
         from datasets import load_dataset
     except ImportError as exc:
         raise ImportError(
-            "Install project dependencies before loading data: pip install -r requirements.txt"
+            'Install project dependencies before loading data: pip install -e ".[dev]"'
         ) from exc
 
     ensure_project_dirs()
