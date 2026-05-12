@@ -21,6 +21,10 @@ The preprocessing variants are:
 
 ## Setup
 
+The recommended setup is `uv`, because it uses `uv.lock` to install the same package
+versions that were resolved for this project. This makes the training, validation, testing,
+and plotting steps easier to reproduce on another computer.
+
 ```bash
 uv sync --extra dev
 ```
@@ -36,6 +40,11 @@ pip install -e ".[dev]"
 
 Use Python 3.11 or newer. The Python install must include normal compression modules such
 as `lzma`, because Hugging Face `datasets` needs them.
+
+`pyproject.toml` lists the direct dependencies chosen for the project. `uv.lock` is larger
+because it stores the complete dependency tree, including packages installed indirectly by
+libraries such as `datasets`, `scikit-learn`, and `matplotlib`. It should stay in the
+repository so the environment can be recreated more reliably.
 
 ## Dataset Download
 
