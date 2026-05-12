@@ -11,7 +11,7 @@
 
 ## Intended Use
 
-This repository is for a college NLP project. The model can classify IMDb-style movie
+This repository is for a IU course DLBAIPNLP01, NLP Project "Sentiment Analysis on Movie Reviews". The model can classify IMDb-style movie
 reviews as positive or negative. It is not meant for important decisions or for sentiment
 analysis in every domain.
 
