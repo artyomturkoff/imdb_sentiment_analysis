@@ -8,6 +8,8 @@ from src.config import LABEL_NAMES
 
 
 def load_model(model_path: str | Path):
+    """Load a saved sklearn pipeline from a .joblib file."""
+
     return joblib.load(model_path)
 
 
@@ -17,6 +19,7 @@ def predict_sentiment(review: str, pipeline) -> dict:
     prediction = int(pipeline.predict([review])[0])
     confidence = None
 
+    # Most sklearn classifiers here expose probabilities, which gives a useful confidence.
     if hasattr(pipeline, "predict_proba"):
         probabilities = pipeline.predict_proba([review])[0]
         classes = list(getattr(pipeline, "classes_", [0, 1]))

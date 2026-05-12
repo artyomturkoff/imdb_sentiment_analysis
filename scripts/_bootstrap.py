@@ -5,6 +5,8 @@ from pathlib import Path
 
 
 def bootstrap() -> None:
+    """Put the project root on sys.path before importing src modules."""
+
     root_dir = Path(__file__).resolve().parents[1]
     root = str(root_dir)
     if root not in sys.path:

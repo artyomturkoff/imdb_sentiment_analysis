@@ -4,12 +4,14 @@ import json
 import os
 from pathlib import Path
 
+# Matplotlib writes small cache files; keeping them under data/raw avoids home-folder issues.
 _MPLCONFIGDIR = Path(__file__).resolve().parents[1] / "data" / "raw" / "matplotlib"
 _MPLCONFIGDIR.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("MPLCONFIGDIR", str(_MPLCONFIGDIR))
 
 import matplotlib
 
+# Agg creates image files without needing a desktop window.
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
@@ -34,6 +36,7 @@ def evaluate_model(model, texts: list[str], labels: list[int]) -> dict:
     predictions = [int(value) for value in model.predict(texts)]
     positive_scores = predict_positive_scores(model, texts)
 
+    # The same metrics are stored for validation and test splits.
     metrics = {
         "n_examples": len(labels),
         "accuracy": round(float(accuracy_score(labels, predictions)), 4),
@@ -69,6 +72,8 @@ def predict_positive_scores(model, texts: list[str]):
 
 
 def save_json(path: Path, payload: dict) -> None:
+    """Save experiment output as readable JSON."""
+
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)
@@ -76,6 +81,8 @@ def save_json(path: Path, payload: dict) -> None:
 
 
 def load_json(path: Path) -> dict:
+    """Load a saved experiment JSON file."""
+
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
@@ -91,6 +98,7 @@ def plot_metric_across_runs(
 
     rows = []
     for run in runs:
+        # Skip files that do not contain the selected split or metric.
         score = run.get(split, {}).get(metric)
         if score is None:
             continue
@@ -105,6 +113,7 @@ def plot_metric_across_runs(
     if not rows:
         return
 
+    # Each run becomes one bar, coloured by model family.
     labels, scores, model_names = zip(*rows)
     colours = [model_colour(model_name) for model_name in model_names]
 
@@ -149,6 +158,7 @@ def plot_run_metric_summary(
     if not rows:
         return
 
+    # The summary plot makes one model easy to inspect before comparing models.
     labels = [pretty_metric_name(metric_name) for metric_name, _ in rows]
     scores = [float(score) for _, score in rows]
 
@@ -197,12 +207,16 @@ def plot_saved_confusion_matrix(
 
 
 def model_run_title(run: dict, split: str, suffix: str) -> str:
+    """Build a short plot title from saved run metadata."""
+
     model_name = str(run.get("model", "model"))
     variant = str(run.get("variant", "")).upper()
     return f"{model_name} variant {variant} {split} {suffix}"
 
 
 def pretty_metric_name(metric_name: str) -> str:
+    """Format metric names for plot labels."""
+
     if metric_name == "f1":
         return "F1"
     if metric_name == "roc_auc":
@@ -211,6 +225,8 @@ def pretty_metric_name(metric_name: str) -> str:
 
 
 def model_colour(model_name: str) -> str:
+    """Use stable colours for baseline and main models in figures."""
+
     if model_name == "baseline_nb":
         return "#5b8def"
     if model_name == "main_lr":

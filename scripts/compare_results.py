@@ -12,6 +12,8 @@ METRIC_CHOICES = ("accuracy", "precision", "recall", "f1", "roc_auc")
 
 
 def result_files() -> list:
+    """Find saved metric files that look like real model runs."""
+
     return sorted(
         path
         for path in METRICS_DIR.glob("*.json")
@@ -20,6 +22,8 @@ def result_files() -> list:
 
 
 def run(*, metric: str, split: str) -> list:
+    """Plot one selected metric across all saved model runs."""
+
     ensure_project_dirs()
     paths = result_files()
     if not paths:
@@ -27,6 +31,7 @@ def run(*, metric: str, split: str) -> list:
             "No model result files found. Train a model first with scripts/train_model.py."
         )
 
+    # Loading all runs here keeps the plotting code reusable and simple.
     runs = [load_json(path) for path in paths]
     output_paths = [FIGURES_DIR / f"compare_{split}_{metric}.png"]
     plot_metric_across_runs(
@@ -39,6 +44,8 @@ def run(*, metric: str, split: str) -> list:
 
 
 def main() -> None:
+    """Parse CLI options and print the comparison plot path."""
+
     import argparse
 
     parser = argparse.ArgumentParser(description=__doc__)

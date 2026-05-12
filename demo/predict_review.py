@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
+    # The demo is run directly, so it adds the project root before importing src.
     sys.path.insert(0, str(ROOT_DIR))
 
 from src.config import MODELS_DIR
@@ -22,12 +23,15 @@ def resolve_model_path(model_name: str) -> Path:
             "Use only the model name, for example: --model small_main_lr_b"
         )
 
+    # Accept both small_main_lr_b and small_main_lr_b.joblib as names.
     if path.suffix == ".joblib":
         return MODELS_DIR / path.name
     return MODELS_DIR / f"{model_name}.joblib"
 
 
 def main() -> None:
+    """Load one trained model and classify one review from the command line."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--text", required=True, help="Raw movie review text to classify")
     parser.add_argument(
@@ -46,6 +50,7 @@ def main() -> None:
     pipeline = load_model(model_path)
     result = predict_sentiment(args.text, pipeline)
     confidence = result["confidence"]
+    # Some models may not provide probabilities, so confidence is optional.
     if confidence is None:
         print(result["label"])
     else:

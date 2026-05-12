@@ -23,18 +23,26 @@ MODEL_FACTORIES = {
 
 
 def run_id(subset: str, model_name: str, variant: str) -> str:
+    """Build the shared name used for model and metric files."""
+
     return f"{subset}_{model_name}_{variant}"
 
 
 def model_path(subset: str, model_name: str, variant: str) -> Path:
+    """Return where the trained model pipeline should be saved."""
+
     return MODELS_DIR / f"{run_id(subset, model_name, variant)}.joblib"
 
 
 def metrics_path(subset: str, model_name: str, variant: str) -> Path:
+    """Return where the metric JSON should be saved."""
+
     return METRICS_DIR / f"{run_id(subset, model_name, variant)}.json"
 
 
 def selected_models(model: str) -> list[str]:
+    """Expand the user's model choice into one or two concrete model names."""
+
     if model == "both":
         return ["baseline_nb", "main_lr"]
     return [model]
@@ -47,13 +55,17 @@ def train_one_model(
     subset_data,
     split_payload: dict,
 ) -> dict:
+    """Train one selected model, evaluate it, and save its outputs."""
+
     model = MODEL_FACTORIES[model_name](variant)
     model.fit(subset_data.train_texts, subset_data.train_labels)
 
+    # The saved pipeline includes preprocessing, vectorisation, and classifier.
     run_model_path = model_path(subset, model_name, variant)
     run_model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, run_model_path)
 
+    # Validation and test metrics are saved together for later plotting.
     payload = {
         "run_id": run_id(subset, model_name, variant),
         "subset": subset,
@@ -80,6 +92,8 @@ def train_one_model(
 
 
 def run(*, subset: str, variant: str, model: str) -> list[dict]:
+    """Load one generated subset and train the requested model choice."""
+
     ensure_project_dirs()
     subset = subset.lower()
     variant = normalize_variant(variant)
@@ -92,6 +106,8 @@ def run(*, subset: str, variant: str, model: str) -> list[dict]:
 
 
 def main() -> None:
+    """Parse CLI options and report the files created by training."""
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--subset", required=True, help="Generated subset name")
     parser.add_argument("--variant", required=True, help="Preprocessing variant A, B, or C")
