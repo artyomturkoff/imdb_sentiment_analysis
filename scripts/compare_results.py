@@ -1,9 +1,6 @@
 """Compare all saved model-result files by one selected metric."""
 
-try:
-    from _bootstrap import bootstrap
-except ImportError:
-    from scripts._bootstrap import bootstrap
+from _bootstrap import bootstrap
 
 bootstrap()
 

@@ -3,10 +3,7 @@
 import argparse
 from pathlib import Path
 
-try:
-    from _bootstrap import bootstrap
-except ImportError:
-    from scripts._bootstrap import bootstrap
+from _bootstrap import bootstrap
 
 bootstrap()
 
