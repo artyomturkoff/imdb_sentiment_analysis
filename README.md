@@ -259,11 +259,12 @@ After training a model, use it for one review:
 
 ```bash
 python demo/predict_review.py \
-  --model models/large_main_lr_b.joblib \
+  --model large_main_lr_b \
   --text "A slow start, but a powerful ending."
 ```
 
-Use the model path that matches the model you selected.
+Use the model name that matches the model you selected. The script looks inside
+`models/`, so you do not need to type the full path.
 
 ## Files
 

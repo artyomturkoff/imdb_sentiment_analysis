@@ -6,13 +6,10 @@ from pathlib import Path
 
 import joblib
 
-from src.config import LABEL_NAMES, MODELS_DIR
+from src.config import LABEL_NAMES
 
 
-DEFAULT_MODEL_PATH = MODELS_DIR / "large_main_lr_b.joblib"
-
-
-def load_model(model_path: str | Path = DEFAULT_MODEL_PATH):
+def load_model(model_path: str | Path):
     return joblib.load(model_path)
 
 
