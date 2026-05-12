@@ -1,4 +1,4 @@
-"""Generate one reusable IMDb subset split."""
+"""Generate an IMDb subset split."""
 
 import argparse
 
@@ -11,8 +11,6 @@ from src.data_loader import build_custom_split_payload, load_imdb_dataset, write
 
 
 def parse_test_size(value: str) -> int | None:
-    """Accept a fixed test size or the word 'all' for the full official test set."""
-
     value = value.strip().lower()
     if value in {"all", "full"}:
         return None
@@ -23,8 +21,6 @@ def parse_test_size(value: str) -> int | None:
 
 
 def positive_int(value: str) -> int:
-    """Argparse helper for sizes that must be greater than zero."""
-
     size = int(value)
     if size <= 0:
         raise argparse.ArgumentTypeError("size must be a positive integer")
@@ -39,8 +35,6 @@ def run(
     test_size: int | None,
     random_seed: int,
 ) -> dict:
-    """Create a split payload and save it for later training runs."""
-
     ensure_project_dirs()
     raw = load_imdb_dataset()
     payload = build_custom_split_payload(
@@ -56,8 +50,6 @@ def run(
 
 
 def main() -> None:
-    """Read command-line arguments and generate one subset file."""
-
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--subset", required=True, help="Subset name, for example small")
     parser.add_argument("--random-seed", type=int, default=42)
@@ -74,7 +66,6 @@ def main() -> None:
         random_seed=args.random_seed,
     )
     counts = payload["counts"]
-    # Print the saved sizes so the user can immediately check the command.
     print(
         f"Saved {split_path(args.subset.lower())} "
         f"(train={counts['train']}, validation={counts['validation']}, "

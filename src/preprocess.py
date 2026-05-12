@@ -1,4 +1,4 @@
-"""Text cleaning steps used before vectorising movie reviews."""
+"""Text cleaning used before vectorising reviews."""
 
 import html
 import re
@@ -12,10 +12,8 @@ from nltk.stem import WordNetLemmatizer
 from src.config import NLTK_DATA_DIR
 
 
-# These words are sentiment-important, so stop-word removal keeps them.
 NEGATORS = {"no", "not", "nor", "never"}
 
-# Common contractions are expanded before punctuation is removed.
 _NEGATION_CONTRACTIONS = {
     "ain't": "is not",
     "aren't": "are not",
@@ -45,14 +43,12 @@ _NEGATION_PATTERN = re.compile(
 
 @dataclass(frozen=True)
 class Preprocessor:
-    """Small callable object so sklearn can save the pipeline."""
+    """Callable preprocessor for sklearn pipelines."""
 
     remove_stopwords: bool = True
     lemmatise: bool = True
 
     def __call__(self, text: str) -> str:
-        """Let sklearn call this object as a vectoriser preprocessor."""
-
         return preprocess_text(
             text,
             remove_stopwords=self.remove_stopwords,
@@ -61,7 +57,7 @@ class Preprocessor:
 
 
 def normalize_variant(variant: str) -> str:
-    """Accept short variant names used in the project plan."""
+    """Normalise variant names."""
 
     value = variant.strip().lower()
     aliases = {
@@ -79,7 +75,7 @@ def normalize_variant(variant: str) -> str:
 
 
 def get_preprocessor(variant: str) -> Preprocessor:
-    """Return one of the three preprocessing variants."""
+    """Return one preprocessing variant."""
 
     variant = normalize_variant(variant)
     if variant == "a":
@@ -90,11 +86,10 @@ def get_preprocessor(variant: str) -> Preprocessor:
 
 
 def expand_negations(text: str) -> str:
-    """Keep words like not before punctuation is removed."""
+    """Expand negation contractions."""
 
     text = text.replace("\u2019", "'")
 
-    # Known contractions are safer to expand from the explicit dictionary.
     def replace_known(match: re.Match[str]) -> str:
         return _NEGATION_CONTRACTIONS[match.group(0).lower()]
 
@@ -108,12 +103,11 @@ def preprocess_text(
     remove_stopwords: bool = True,
     lemmatise: bool = True,
 ) -> str:
-    """Clean one review with the chosen variant."""
+    """Clean one review."""
 
     if not isinstance(text, str):
         text = "" if text is None else str(text)
 
-    # Basic text cleaning: HTML, case, negations, non-letters, and extra spaces.
     text = html.unescape(text)
     text = re.sub(r"<br\s*/?>", " ", text, flags=re.IGNORECASE)
     text = re.sub(r"<[^>]+>", " ", text)
@@ -122,16 +116,13 @@ def preprocess_text(
     text = re.sub(r"[^a-z\s]", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
 
-    # Very short tokens usually add noise in this bag-of-words setting.
     tokens = [token for token in text.split() if len(token) > 1]
 
     if remove_stopwords:
-        # Variant B and C remove common words but keep important negators.
         stop_words = get_stop_words()
         tokens = [token for token in tokens if token not in stop_words]
 
     if lemmatise:
-        # Variant C reduces related word forms, for example films -> film.
         lemmatizer = get_lemmatizer()
         tokens = [lemmatizer.lemmatize(token) for token in tokens]
 
@@ -139,7 +130,7 @@ def preprocess_text(
 
 
 def ensure_nltk_resources() -> None:
-    """Download the small NLTK resources needed for this project."""
+    """Download missing NLTK resources."""
 
     NLTK_DATA_DIR.mkdir(parents=True, exist_ok=True)
     data_dir = str(NLTK_DATA_DIR)
@@ -151,7 +142,6 @@ def ensure_nltk_resources() -> None:
         (("corpora/wordnet", "corpora/wordnet.zip"), "wordnet"),
         (("corpora/omw-1.4", "corpora/omw-1.4.zip"), "omw-1.4"),
     ):
-        # NLTK may store resources as folders or zip files, so both are checked.
         if has_nltk_resource(resource_paths):
             continue
         downloaded = nltk.download(package_name, download_dir=data_dir, quiet=True)
@@ -163,8 +153,6 @@ def ensure_nltk_resources() -> None:
 
 
 def has_nltk_resource(resource_paths: tuple[str, ...]) -> bool:
-    """Check whether at least one possible NLTK resource path exists."""
-
     for resource_path in resource_paths:
         try:
             nltk.data.find(resource_path)
@@ -176,7 +164,7 @@ def has_nltk_resource(resource_paths: tuple[str, ...]) -> bool:
 
 @lru_cache(maxsize=1)
 def get_stop_words() -> set[str]:
-    """Load English stop words once and remove sentiment negators from the set."""
+    """English stop words without negators."""
 
     ensure_nltk_resources()
     return set(stopwords.words("english")) - NEGATORS
@@ -184,7 +172,5 @@ def get_stop_words() -> set[str]:
 
 @lru_cache(maxsize=1)
 def get_lemmatizer() -> WordNetLemmatizer:
-    """Create the WordNet lemmatiser once for repeated preprocessing calls."""
-
     ensure_nltk_resources()
     return WordNetLemmatizer()

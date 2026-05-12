@@ -1,4 +1,4 @@
-"""Load IMDb and make the train/validation/test splits."""
+"""Load IMDb and prepare train/validation/test splits."""
 
 import json
 from dataclasses import dataclass
@@ -18,7 +18,7 @@ from src.config import (
 
 @dataclass(frozen=True)
 class RawImdbData:
-    """Raw official IMDb train and test splits loaded from Hugging Face."""
+    """Official IMDb train and test splits."""
 
     train_texts: list[str]
     train_labels: list[int]
@@ -28,7 +28,7 @@ class RawImdbData:
 
 @dataclass(frozen=True)
 class SubsetData:
-    """Texts, labels, and saved indices for one named experiment subset."""
+    """Data for one saved subset."""
 
     subset: str
     train_texts: list[str]
@@ -44,9 +44,8 @@ class SubsetData:
 
 
 def load_imdb_dataset() -> RawImdbData:
-    """Load the labelled IMDb reviews from Hugging Face."""
+    """Load IMDb reviews from Hugging Face."""
 
-    # Import here so a missing optional package gives a clear project-level message.
     try:
         from datasets import load_dataset
     except ImportError as exc:
@@ -69,7 +68,7 @@ def load_subset_data(
     *,
     raw: RawImdbData | None = None,
 ) -> SubsetData:
-    """Return texts and labels for one generated subset."""
+    """Load one generated subset."""
 
     subset = subset.lower()
     path = split_path(subset)
@@ -81,7 +80,6 @@ def load_subset_data(
     raw = raw or load_imdb_dataset()
     payload = read_json(path)
 
-    # The split file stores only indices, keeping the repository small and reproducible.
     train_indices = [int(index) for index in payload["train_indices"]]
     validation_indices = [int(index) for index in payload["validation_indices"]]
     test_indices = [int(index) for index in payload["test_indices"]]
@@ -110,9 +108,8 @@ def build_custom_split_payload(
     test_size: int | None,
     random_state: int,
 ) -> dict:
-    """Build one manually configured train/validation/test split."""
+    """Build one split payload."""
 
-    # Validation data is carved from the official training split, not from test data.
     train_pool_size = train_size + validation_size
     if train_pool_size > len(raw.train_labels):
         raise ValueError(
@@ -134,7 +131,6 @@ def build_custom_split_payload(
         random_state=random_state,
     )
 
-    # Test data always comes from the official IMDb test split.
     if test_size is None:
         test_indices = list(range(len(raw.test_labels)))
         test_source = "official_test_full"
@@ -172,7 +168,7 @@ def stratified_subset(
     *,
     random_state: int = RANDOM_STATE,
 ) -> list[int]:
-    """Take a smaller balanced subset from a list of dataset indices."""
+    """Take a balanced subset of indices."""
 
     indices = [int(index) for index in indices]
     if size > len(indices):
@@ -190,21 +186,15 @@ def stratified_subset(
 
 
 def select(values: list, indices: list[int]) -> list:
-    """Return values in the saved index order."""
-
     return [values[index] for index in indices]
 
 
 def read_json(path: Path) -> dict:
-    """Read a UTF-8 JSON file into a Python dictionary."""
-
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
 
 def write_json(path: Path, payload: dict) -> None:
-    """Write a dictionary as neat UTF-8 JSON."""
-
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)

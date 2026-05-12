@@ -1,12 +1,10 @@
-"""Make script imports work from the repo root."""
+"""Make direct script imports work."""
 
 import sys
 from pathlib import Path
 
 
 def bootstrap() -> None:
-    """Put the project root on sys.path before importing src modules."""
-
     root_dir = Path(__file__).resolve().parents[1]
     root = str(root_dir)
     if root not in sys.path:

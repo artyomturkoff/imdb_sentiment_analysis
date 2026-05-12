@@ -1,17 +1,15 @@
-"""Metrics and plots for the experiment scripts."""
+"""Metrics and plots used by the scripts."""
 
 import json
 import os
 from pathlib import Path
 
-# Matplotlib writes small cache files; keeping them under data/raw avoids home-folder issues.
 _MPLCONFIGDIR = Path(__file__).resolve().parents[1] / "data" / "raw" / "matplotlib"
 _MPLCONFIGDIR.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("MPLCONFIGDIR", str(_MPLCONFIGDIR))
 
 import matplotlib
 
-# Agg creates image files without needing a desktop window.
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
@@ -31,12 +29,11 @@ from src.config import LABEL_NAMES
 
 
 def evaluate_model(model, texts: list[str], labels: list[int]) -> dict:
-    """Calculate the scores used in the report."""
+    """Return the main classification scores."""
 
     predictions = [int(value) for value in model.predict(texts)]
     positive_scores = predict_positive_scores(model, texts)
 
-    # The same metrics are stored for validation and test splits.
     metrics = {
         "n_examples": len(labels),
         "accuracy": round(float(accuracy_score(labels, predictions)), 4),
@@ -61,7 +58,7 @@ def evaluate_model(model, texts: list[str], labels: list[int]) -> dict:
 
 
 def predict_positive_scores(model, texts: list[str]):
-    """Get positive-class probabilities for ROC-AUC."""
+    """Positive-class scores for ROC-AUC."""
 
     if hasattr(model, "predict_proba"):
         probabilities = model.predict_proba(texts)
@@ -72,8 +69,6 @@ def predict_positive_scores(model, texts: list[str]):
 
 
 def save_json(path: Path, payload: dict) -> None:
-    """Save experiment output as readable JSON."""
-
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)
@@ -81,8 +76,6 @@ def save_json(path: Path, payload: dict) -> None:
 
 
 def load_json(path: Path) -> dict:
-    """Load a saved experiment JSON file."""
-
     with path.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
@@ -94,11 +87,10 @@ def plot_metric_across_runs(
     split: str,
     metric: str,
 ) -> None:
-    """Plot one metric for all saved model-result payloads."""
+    """Plot one metric for saved runs."""
 
     rows = []
     for run in runs:
-        # Skip files that do not contain the selected split or metric.
         score = run.get(split, {}).get(metric)
         if score is None:
             continue
@@ -113,7 +105,6 @@ def plot_metric_across_runs(
     if not rows:
         return
 
-    # Each run becomes one bar, coloured by model family.
     labels, scores, model_names = zip(*rows)
     colours = [model_colour(model_name) for model_name in model_names]
 
@@ -146,7 +137,7 @@ def plot_run_metric_summary(
     split: str = "test",
     title: str | None = None,
 ) -> None:
-    """Save accuracy, precision, recall, F1, and ROC-AUC for one model run."""
+    """Save metric bars for one model."""
 
     split_metrics = run.get(split, {})
     metric_names = ["accuracy", "precision", "recall", "f1", "roc_auc"]
@@ -158,7 +149,6 @@ def plot_run_metric_summary(
     if not rows:
         return
 
-    # The summary plot makes one model easy to inspect before comparing models.
     labels = [pretty_metric_name(metric_name) for metric_name, _ in rows]
     scores = [float(score) for _, score in rows]
 
@@ -188,7 +178,7 @@ def plot_saved_confusion_matrix(
     split: str = "test",
     title: str | None = None,
 ) -> None:
-    """Save a confusion matrix from metrics already written to JSON."""
+    """Save a confusion matrix image."""
 
     matrix = run.get(split, {}).get("confusion_matrix")
     if matrix is None:
@@ -207,16 +197,12 @@ def plot_saved_confusion_matrix(
 
 
 def model_run_title(run: dict, split: str, suffix: str) -> str:
-    """Build a short plot title from saved run metadata."""
-
     model_name = str(run.get("model", "model"))
     variant = str(run.get("variant", "")).upper()
     return f"{model_name} variant {variant} {split} {suffix}"
 
 
 def pretty_metric_name(metric_name: str) -> str:
-    """Format metric names for plot labels."""
-
     if metric_name == "f1":
         return "F1"
     if metric_name == "roc_auc":
@@ -225,10 +211,8 @@ def pretty_metric_name(metric_name: str) -> str:
 
 
 def model_colour(model_name: str) -> str:
-    """Use stable colours for baseline and main models in figures."""
-
-    if model_name == "baseline_nb":
+    if model_name == "naive_bayes_baseline":
         return "#5b8def"
-    if model_name == "main_lr":
+    if model_name == "tfidf_logreg_main":
         return "#47a878"
     return "#8f8f8f"

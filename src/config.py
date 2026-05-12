@@ -1,14 +1,12 @@
-"""Small set of paths and constants used by the project scripts."""
+"""Project paths and constants."""
 
 from pathlib import Path
 
 
-# One fixed seed keeps subset generation and model training repeatable.
 RANDOM_STATE = 42
 DATASET_NAME = "stanfordnlp/imdb"
 LABEL_NAMES = {0: "negative", 1: "positive"}
 
-# Paths are built from the repository root, so scripts work from the command line.
 ROOT_DIR = Path(__file__).resolve().parents[1]
 
 DATA_DIR = ROOT_DIR / "data"
@@ -24,8 +22,6 @@ FIGURES_DIR = RESULTS_DIR / "figures"
 
 
 def ensure_project_dirs() -> None:
-    """Create folders that scripts write into."""
-
     for path in (
         DATA_DIR,
         RAW_DATA_DIR,
@@ -41,6 +37,4 @@ def ensure_project_dirs() -> None:
 
 
 def split_path(tier: str) -> Path:
-    """Return the JSON path for one named subset split."""
-
     return SPLITS_DIR / f"{tier}_split.json"

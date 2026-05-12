@@ -1,4 +1,4 @@
-"""Visualise validation and/or test results for one trained model."""
+"""Visualise saved validation and test results."""
 
 import argparse
 from pathlib import Path
@@ -16,16 +16,12 @@ from src.evaluate import (
 
 
 def selected_splits(split: str) -> list[str]:
-    """Turn 'all' into both saved evaluation splits."""
-
     if split == "all":
         return ["validation", "test"]
     return [split]
 
 
 def run(*, model_name: str, split: str = "all") -> list[Path]:
-    """Create metric and confusion-matrix plots for one saved model run."""
-
     ensure_project_dirs()
     metrics_path = METRICS_DIR / f"{model_name}.json"
     if not metrics_path.exists():
@@ -36,7 +32,6 @@ def run(*, model_name: str, split: str = "all") -> list[Path]:
     payload = load_json(metrics_path)
     output_paths: list[Path] = []
     for split_name in selected_splits(split):
-        # Each split gets one metric bar plot and one confusion matrix.
         metrics_output = FIGURES_DIR / f"{model_name}_{split_name}_metrics.png"
         confusion_output = FIGURES_DIR / f"{model_name}_{split_name}_confusion_matrix.png"
         plot_run_metric_summary(
@@ -56,13 +51,11 @@ def run(*, model_name: str, split: str = "all") -> list[Path]:
 
 
 def main() -> None:
-    """Parse CLI options and print the figure paths."""
-
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model-name",
         required=True,
-        help="Model run name, for example small_main_lr_b",
+        help="Model run name, for example small_tfidf_logreg_main_b",
     )
     parser.add_argument(
         "--split",

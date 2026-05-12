@@ -1,4 +1,4 @@
-"""Create the two sklearn models used in the project."""
+"""Create the two sklearn model pipelines."""
 
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -10,9 +10,8 @@ from src.preprocess import get_preprocessor
 
 
 def make_baseline_pipeline(variant: str = "c") -> Pipeline:
-    """Baseline: word counts with Naive Bayes."""
+    """Word-count Naive Bayes baseline."""
 
-    # This intentionally simple pipeline gives a fair reference point.
     return Pipeline(
         [
             (
@@ -31,9 +30,8 @@ def make_baseline_pipeline(variant: str = "c") -> Pipeline:
 
 
 def make_main_pipeline(variant: str = "c") -> Pipeline:
-    """Main model: TF-IDF features with Logistic Regression."""
+    """TF-IDF and Logistic Regression model."""
 
-    # Bigrams help the main model learn short phrases such as not good.
     return Pipeline(
         [
             (
