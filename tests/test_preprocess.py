@@ -1,27 +1,71 @@
-import unittest
-
-from src.preprocess import preprocess_text
+from src import preprocess
 
 
-class PreprocessTextTests(unittest.TestCase):
-    """Checks for text cleaning."""
-
-    def test_expands_negation_contractions(self):
-        cleaned = preprocess_text(
-            "I didn't love it.",
-            remove_stopwords=False,
-            lemmatise=False,
-        )
-        self.assertIn("did not love", cleaned)
-
-    def test_removes_html_breaks_and_unescapes_entities(self):
-        cleaned = preprocess_text(
-            "Great &amp; funny<br />Not dull.",
-            remove_stopwords=False,
-            lemmatise=False,
-        )
-        self.assertEqual(cleaned, "great funny not dull")
+class FakeLemmatizer:
+    def lemmatize(self, token: str) -> str:
+        forms = {
+            "films": "film",
+            "stories": "story",
+            "boring": "boring",
+        }
+        return forms.get(token, token)
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_basic_cleaning_expands_negations_and_removes_html():
+    cleaned = preprocess.preprocess_text(
+        "I didn't love it.<br />Great &amp; funny!",
+        remove_stopwords=False,
+        lemmatise=False,
+    )
+
+    assert cleaned == "did not love it great funny"
+
+
+def test_variant_a_keeps_stopwords_and_word_forms():
+    cleaned = preprocess.get_preprocessor("a")(
+        "This isn't the best film, but the stories are moving."
+    )
+
+    assert cleaned == "this is not the best film but the stories are moving"
+
+
+def test_variant_b_removes_stopwords_but_keeps_negators(monkeypatch):
+    monkeypatch.setattr(
+        preprocess,
+        "get_stop_words",
+        lambda: {"this", "is", "the", "but", "are"},
+    )
+
+    cleaned = preprocess.get_preprocessor("b")(
+        "This isn't the best film, but the stories are moving."
+    )
+
+    assert cleaned == "not best film stories moving"
+
+
+def test_variant_c_adds_lemmatisation(monkeypatch):
+    monkeypatch.setattr(
+        preprocess,
+        "get_stop_words",
+        lambda: {"this", "is", "the", "but", "are"},
+    )
+    monkeypatch.setattr(preprocess, "get_lemmatizer", lambda: FakeLemmatizer())
+
+    cleaned = preprocess.get_preprocessor("c")(
+        "This isn't the best films, but the stories are moving."
+    )
+
+    assert cleaned == "not best film story moving"
+
+
+def test_variant_aliases_are_supported(monkeypatch):
+    monkeypatch.setattr(
+        preprocess,
+        "get_stop_words",
+        lambda: {"the", "was"},
+    )
+    monkeypatch.setattr(preprocess, "get_lemmatizer", lambda: FakeLemmatizer())
+
+    cleaned = preprocess.get_preprocessor("wordnet")("The films was boring.")
+
+    assert cleaned == "film boring"
