@@ -35,7 +35,6 @@ token.json
 
 # Dataset files and local caches
 data/raw/
-data/processed/
 
 # Generated model files
 models/*
@@ -51,10 +50,6 @@ wandb/
 results/*
 !results/.gitkeep
 !results/README.md
-
-# Notebook runtime files
-.ipynb_checkpoints/
-notebooks/.ipynb_checkpoints/
 
 # Logs and temporary files
 *.log
