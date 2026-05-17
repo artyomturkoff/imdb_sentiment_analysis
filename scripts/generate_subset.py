@@ -41,7 +41,7 @@ def run(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--subset", required=True)
-    parser.add_argument("--random-seed", type=int, default=42)
+    parser.add_argument("--random-seed", type=int, required=True)
     parser.add_argument("--train-size", type=int, required=True)
     parser.add_argument("--validation-size", type=int, required=True)
     parser.add_argument("--test-size", type=parse_test_size, required=True)

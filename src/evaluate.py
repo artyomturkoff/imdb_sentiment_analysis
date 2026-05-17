@@ -116,8 +116,8 @@ def plot_run_metric_summary(
     run: dict,
     output_path: Path,
     *,
-    split: str = "test",
-    title: str | None = None,
+    split: str,
+    title: str,
 ) -> None:
     """Save metric bars for one model."""
 
@@ -133,7 +133,7 @@ def plot_run_metric_summary(
     bars = plt.bar(labels, scores, color=model_colour(run["model"]))
     plt.ylim(0.0, 1.0)
     plt.ylabel("Score")
-    plt.title(title or model_run_title(run, split, "metric summary"))
+    plt.title(title)
     for bar, score in zip(bars, scores):
         plt.text(
             bar.get_x() + bar.get_width() / 2,
@@ -151,8 +151,8 @@ def plot_saved_confusion_matrix(
     run: dict,
     output_path: Path,
     *,
-    split: str = "test",
-    title: str | None = None,
+    split: str,
+    title: str,
 ) -> None:
     """Save a confusion matrix image."""
 
@@ -162,14 +162,10 @@ def plot_saved_confusion_matrix(
         display_labels=[LABEL_NAMES[0], LABEL_NAMES[1]],
     )
     display.plot(values_format="d", cmap="Blues", colorbar=False)
-    plt.title(title or model_run_title(run, split, "confusion matrix"))
+    plt.title(title)
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-
-
-def model_run_title(run: dict, split: str, suffix: str) -> str:
-    return f"{run['model']} variant {run['variant'].upper()} {split} {suffix}"
 
 
 def pretty_metric_name(metric_name: str) -> str:

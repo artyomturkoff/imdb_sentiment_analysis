@@ -14,7 +14,7 @@ from src.evaluate import (
 )
 
 
-def run(*, model_name: str, split: str = "all") -> list:
+def run(*, model_name: str, split: str) -> list:
     ensure_project_dirs()
     payload = load_json(METRICS_DIR / f"{model_name}.json")
     output_paths = []
@@ -46,7 +46,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--split",
-        default="all",
+        required=True,
         choices=("all", "validation", "test"),
     )
     args = parser.parse_args()

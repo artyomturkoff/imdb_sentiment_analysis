@@ -9,7 +9,7 @@ from src.config import RANDOM_STATE
 from src.preprocess import get_preprocessor
 
 
-def make_baseline_pipeline(variant: str = "c") -> Pipeline:
+def make_baseline_pipeline(variant: str) -> Pipeline:
     """Word-count Naive Bayes baseline."""
 
     return Pipeline(
@@ -29,7 +29,7 @@ def make_baseline_pipeline(variant: str = "c") -> Pipeline:
     )
 
 
-def make_main_pipeline(variant: str = "c") -> Pipeline:
+def make_main_pipeline(variant: str) -> Pipeline:
     """TF-IDF and Logistic Regression model."""
 
     return Pipeline(

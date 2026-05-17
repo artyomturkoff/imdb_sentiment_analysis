@@ -50,8 +50,8 @@ _NEGATION_PATTERN = re.compile(
 class Preprocessor:
     """Callable preprocessor for sklearn pipelines."""
 
-    remove_stopwords: bool = True
-    lemmatise: bool = True
+    remove_stopwords: bool
+    lemmatise: bool
 
     def __call__(self, text: str) -> str:
         return preprocess_text(
@@ -82,8 +82,8 @@ def expand_negations(text: str) -> str:
 def preprocess_text(
     text: str,
     *,
-    remove_stopwords: bool = True,
-    lemmatise: bool = True,
+    remove_stopwords: bool,
+    lemmatise: bool,
 ) -> str:
     """Clean one review."""
 

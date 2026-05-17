@@ -28,8 +28,8 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--metric", default="f1", choices=METRICS)
-    parser.add_argument("--split", default="test", choices=("validation", "test"))
+    parser.add_argument("--metric", required=True, choices=METRICS)
+    parser.add_argument("--split", required=True, choices=("validation", "test"))
     args = parser.parse_args()
 
     output_paths = run(metric=args.metric, split=args.split)

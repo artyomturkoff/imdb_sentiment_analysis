@@ -61,7 +61,7 @@ The main TF-IDF Logistic Regression model gives the best test F1 score in this s
 python scripts/generate_subset.py --subset small --random-seed 42 --train-size 2000 --validation-size 500 --test-size 5000
 python scripts/train_model.py --subset small --variant b --model naive_bayes_baseline
 python scripts/train_model.py --subset small --variant b --model tfidf_logreg_main
-python scripts/visualise_model.py --model-name small_tfidf_logreg_main_b
+python scripts/visualise_model.py --model-name small_tfidf_logreg_main_b --split all
 python scripts/compare_results.py --metric f1 --split test
 ```
 

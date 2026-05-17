@@ -85,7 +85,7 @@ The model card reports a small run with preprocessing variant `b`. To recreate i
 python scripts/generate_subset.py --subset small --random-seed 42 --train-size 2000 --validation-size 500 --test-size 5000
 python scripts/train_model.py --subset small --variant b --model naive_bayes_baseline
 python scripts/train_model.py --subset small --variant b --model tfidf_logreg_main
-python scripts/visualise_model.py --model-name small_tfidf_logreg_main_b
+python scripts/visualise_model.py --model-name small_tfidf_logreg_main_b --split all
 python scripts/compare_results.py --metric f1 --split test
 ```
 
@@ -144,7 +144,7 @@ Each run saves a `.joblib` model and one JSON metrics file.
 Create figures for one model:
 
 ```bash
-python scripts/visualise_model.py --model-name small_tfidf_logreg_main_b
+python scripts/visualise_model.py --model-name small_tfidf_logreg_main_b --split all
 ```
 
 Compare all saved result files by one metric:
