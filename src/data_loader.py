@@ -1,6 +1,7 @@
 """Load IMDb and prepare train/validation/test splits."""
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -45,16 +46,35 @@ class SubsetData:
 def load_imdb_dataset() -> RawImdbData:
     """Load IMDb reviews from Hugging Face."""
 
-    from datasets import load_dataset
-
     ensure_project_dirs()
-    imdb = load_dataset(DATASET_NAME, cache_dir=str(HF_CACHE_DIR))
+    use_local_cache = imdb_cache_exists()
+    if use_local_cache:
+        os.environ["HF_DATASETS_OFFLINE"] = "1"
+
+    from datasets import DownloadConfig, load_dataset
+    from datasets import logging as datasets_logging
+
+    if use_local_cache:
+        datasets_logging.set_verbosity_error()
+
+    imdb = load_dataset(
+        DATASET_NAME,
+        cache_dir=str(HF_CACHE_DIR),
+        download_config=DownloadConfig(local_files_only=use_local_cache),
+    )
     return RawImdbData(
         train_texts=list(imdb["train"]["text"]),
         train_labels=[int(label) for label in imdb["train"]["label"]],
         test_texts=list(imdb["test"]["text"]),
         test_labels=[int(label) for label in imdb["test"]["label"]],
     )
+
+
+def imdb_cache_exists() -> bool:
+    cache_root = HF_CACHE_DIR / "stanfordnlp___imdb"
+    has_train = any(cache_root.glob("**/imdb-train.arrow"))
+    has_test = any(cache_root.glob("**/imdb-test.arrow"))
+    return has_train and has_test
 
 
 def load_subset_data(subset: str) -> SubsetData:
