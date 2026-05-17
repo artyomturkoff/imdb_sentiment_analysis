@@ -113,7 +113,7 @@ You can regenerate them with:
 ```bash
 python scripts/generate_subset.py --subset small --random-seed 42 --train-size 2000 --validation-size 500 --test-size 5000
 python scripts/generate_subset.py --subset medium --random-seed 42 --train-size 8000 --validation-size 2000 --test-size 5000
-python scripts/generate_subset.py --subset large --random-seed 42 --train-size 20000 --validation-size 5000 --test-size all
+python scripts/generate_subset.py --subset large --random-seed 42 --train-size 20000 --validation-size 5000 --test-size 25000
 ```
 
 ## Train Models

@@ -109,7 +109,7 @@ def build_custom_split_payload(
     subset: str,
     train_size: int,
     validation_size: int,
-    test_size: int | None,
+    test_size: int,
     random_state: int,
 ) -> dict:
     """Build one split payload."""
@@ -129,17 +129,13 @@ def build_custom_split_payload(
         random_state=random_state,
     )
 
-    if test_size is None:
-        test_indices = list(range(len(raw.test_labels)))
-        test_source = "official_test_full"
-    else:
-        test_indices = stratified_subset(
-            range(len(raw.test_labels)),
-            raw.test_labels,
-            test_size,
-            random_state=random_state,
-        )
-        test_source = f"official_test_fixed_{test_size}"
+    test_indices = stratified_subset(
+        range(len(raw.test_labels)),
+        raw.test_labels,
+        test_size,
+        random_state=random_state,
+    )
+    test_source = f"official_test_fixed_{test_size}"
 
     return {
         "dataset": DATASET_NAME,
