@@ -1,7 +1,6 @@
 """Train one or both project models."""
 
 import argparse
-from pathlib import Path
 
 import joblib
 
@@ -13,7 +12,6 @@ from src.config import METRICS_DIR, MODELS_DIR, ROOT_DIR, ensure_project_dirs, s
 from src.data_loader import load_subset_data, read_json
 from src.evaluate import evaluate_model, save_json
 from src.features import make_baseline_pipeline, make_main_pipeline
-from src.preprocess import normalize_variant
 
 
 MODEL_FACTORIES = {
@@ -26,20 +24,6 @@ def run_id(subset: str, model_name: str, variant: str) -> str:
     return f"{subset}_{model_name}_{variant}"
 
 
-def model_path(subset: str, model_name: str, variant: str) -> Path:
-    return MODELS_DIR / f"{run_id(subset, model_name, variant)}.joblib"
-
-
-def metrics_path(subset: str, model_name: str, variant: str) -> Path:
-    return METRICS_DIR / f"{run_id(subset, model_name, variant)}.json"
-
-
-def selected_models(model: str) -> list[str]:
-    if model == "both":
-        return ["naive_bayes_baseline", "tfidf_logreg_main"]
-    return [model]
-
-
 def train_one_model(
     subset: str,
     variant: str,
@@ -47,15 +31,18 @@ def train_one_model(
     subset_data,
     split_payload: dict,
 ) -> dict:
+    run_name = run_id(subset, model_name, variant)
+    run_model_path = MODELS_DIR / f"{run_name}.joblib"
+    run_metrics_path = METRICS_DIR / f"{run_name}.json"
+
     model = MODEL_FACTORIES[model_name](variant)
     model.fit(subset_data.train_texts, subset_data.train_labels)
 
-    run_model_path = model_path(subset, model_name, variant)
     run_model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, run_model_path)
 
     payload = {
-        "run_id": run_id(subset, model_name, variant),
+        "run_id": run_name,
         "subset": subset,
         "model": model_name,
         "variant": variant,
@@ -75,45 +62,38 @@ def train_one_model(
             subset_data.test_labels,
         ),
     }
-    save_json(metrics_path(subset, model_name, variant), payload)
+    save_json(run_metrics_path, payload)
     return payload
 
 
 def run(*, subset: str, variant: str, model: str) -> list[dict]:
     ensure_project_dirs()
     subset = subset.lower()
-    variant = normalize_variant(variant)
+    variant = variant.lower()
     subset_data = load_subset_data(subset)
     split_payload = read_json(split_path(subset))
+    model_names = MODEL_FACTORIES if model == "both" else [model]
     return [
         train_one_model(subset, variant, model_name, subset_data, split_payload)
-        for model_name in selected_models(model)
+        for model_name in model_names
     ]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--subset", required=True, help="Generated subset name")
-    parser.add_argument("--variant", required=True, help="Preprocessing variant A, B, or C")
+    parser.add_argument("--subset", required=True)
+    parser.add_argument("--variant", required=True, type=str.lower, choices=("a", "b", "c"))
     parser.add_argument(
         "--model",
         default="both",
         choices=("both", "naive_bayes_baseline", "tfidf_logreg_main"),
-        help="Which model to train",
     )
     args = parser.parse_args()
 
     payloads = run(subset=args.subset, variant=args.variant, model=args.model)
     for payload in payloads:
-        metric_file = metrics_path(
-            payload["subset"],
-            payload["model"],
-            payload["variant"],
-        ).relative_to(ROOT_DIR)
-        print(
-            f"Saved {payload['model_path']} and "
-            f"{metric_file}"
-        )
+        metric_file = METRICS_DIR / f"{payload['run_id']}.json"
+        print(f"Saved {payload['model_path']} and {metric_file.relative_to(ROOT_DIR)}")
 
 
 if __name__ == "__main__":

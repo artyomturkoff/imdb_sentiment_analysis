@@ -15,16 +15,11 @@ def predict_sentiment(review: str, pipeline) -> dict:
     """Return label and confidence."""
 
     prediction = int(pipeline.predict([review])[0])
-    confidence = None
-
-    if hasattr(pipeline, "predict_proba"):
-        probabilities = pipeline.predict_proba([review])[0]
-        classes = list(getattr(pipeline, "classes_", [0, 1]))
-        class_index = classes.index(prediction)
-        confidence = round(float(probabilities[class_index]), 4)
+    probabilities = pipeline.predict_proba([review])[0]
+    class_index = list(pipeline.classes_).index(prediction)
 
     return {
         "label": LABEL_NAMES[prediction],
         "prediction": prediction,
-        "confidence": confidence,
+        "confidence": round(float(probabilities[class_index]), 4),
     }

@@ -32,9 +32,10 @@ def evaluate_model(model, texts: list[str], labels: list[int]) -> dict:
     """Return the main classification scores."""
 
     predictions = [int(value) for value in model.predict(texts)]
-    positive_scores = predict_positive_scores(model, texts)
+    probabilities = model.predict_proba(texts)
+    positive_scores = probabilities[:, list(model.classes_).index(1)]
 
-    metrics = {
+    return {
         "n_examples": len(labels),
         "accuracy": round(float(accuracy_score(labels, predictions)), 4),
         "precision": round(
@@ -51,21 +52,8 @@ def evaluate_model(model, texts: list[str], labels: list[int]) -> dict:
             output_dict=True,
             zero_division=0,
         ),
+        "roc_auc": round(float(roc_auc_score(labels, positive_scores)), 4),
     }
-    if positive_scores is not None:
-        metrics["roc_auc"] = round(float(roc_auc_score(labels, positive_scores)), 4)
-    return metrics
-
-
-def predict_positive_scores(model, texts: list[str]):
-    """Positive-class scores for ROC-AUC."""
-
-    if hasattr(model, "predict_proba"):
-        probabilities = model.predict_proba(texts)
-        classes = list(getattr(model, "classes_", [0, 1]))
-        positive_index = classes.index(1)
-        return probabilities[:, positive_index]
-    return None
 
 
 def save_json(path: Path, payload: dict) -> None:
@@ -91,19 +79,13 @@ def plot_metric_across_runs(
 
     rows = []
     for run in runs:
-        score = run.get(split, {}).get(metric)
-        if score is None:
-            continue
         rows.append(
             (
-                str(run.get("run_id", "model")),
-                float(score),
-                str(run.get("model", "")),
+                run["run_id"],
+                float(run[split][metric]),
+                run["model"],
             )
         )
-
-    if not rows:
-        return
 
     labels, scores, model_names = zip(*rows)
     colours = [model_colour(model_name) for model_name in model_names]
@@ -139,22 +121,16 @@ def plot_run_metric_summary(
 ) -> None:
     """Save metric bars for one model."""
 
-    split_metrics = run.get(split, {})
+    split_metrics = run[split]
     metric_names = ["accuracy", "precision", "recall", "f1", "roc_auc"]
-    rows = [
-        (metric_name, split_metrics[metric_name])
-        for metric_name in metric_names
-        if metric_name in split_metrics
-    ]
-    if not rows:
-        return
+    rows = [(metric_name, split_metrics[metric_name]) for metric_name in metric_names]
 
     labels = [pretty_metric_name(metric_name) for metric_name, _ in rows]
     scores = [float(score) for _, score in rows]
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     plt.figure(figsize=(7, 4))
-    bars = plt.bar(labels, scores, color=model_colour(str(run.get("model", ""))))
+    bars = plt.bar(labels, scores, color=model_colour(run["model"]))
     plt.ylim(0.0, 1.0)
     plt.ylabel("Score")
     plt.title(title or model_run_title(run, split, "metric summary"))
@@ -180,13 +156,9 @@ def plot_saved_confusion_matrix(
 ) -> None:
     """Save a confusion matrix image."""
 
-    matrix = run.get(split, {}).get("confusion_matrix")
-    if matrix is None:
-        return
-
     output_path.parent.mkdir(parents=True, exist_ok=True)
     display = ConfusionMatrixDisplay(
-        confusion_matrix=np.asarray(matrix),
+        confusion_matrix=np.asarray(run[split]["confusion_matrix"]),
         display_labels=[LABEL_NAMES[0], LABEL_NAMES[1]],
     )
     display.plot(values_format="d", cmap="Blues", colorbar=False)
@@ -197,9 +169,7 @@ def plot_saved_confusion_matrix(
 
 
 def model_run_title(run: dict, split: str, suffix: str) -> str:
-    model_name = str(run.get("model", "model"))
-    variant = str(run.get("variant", "")).upper()
-    return f"{model_name} variant {variant} {split} {suffix}"
+    return f"{run['model']} variant {run['variant'].upper()} {split} {suffix}"
 
 
 def pretty_metric_name(metric_name: str) -> str:
@@ -211,8 +181,8 @@ def pretty_metric_name(metric_name: str) -> str:
 
 
 def model_colour(model_name: str) -> str:
-    if model_name == "naive_bayes_baseline":
-        return "#5b8def"
-    if model_name == "tfidf_logreg_main":
-        return "#47a878"
-    return "#8f8f8f"
+    colours = {
+        "naive_bayes_baseline": "#5b8def",
+        "tfidf_logreg_main": "#47a878",
+    }
+    return colours[model_name]

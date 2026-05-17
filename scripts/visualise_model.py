@@ -1,7 +1,6 @@
 """Visualise saved validation and test results."""
 
 import argparse
-from pathlib import Path
 
 from _bootstrap import bootstrap
 
@@ -15,23 +14,12 @@ from src.evaluate import (
 )
 
 
-def selected_splits(split: str) -> list[str]:
-    if split == "all":
-        return ["validation", "test"]
-    return [split]
-
-
-def run(*, model_name: str, split: str = "all") -> list[Path]:
+def run(*, model_name: str, split: str = "all") -> list:
     ensure_project_dirs()
-    metrics_path = METRICS_DIR / f"{model_name}.json"
-    if not metrics_path.exists():
-        raise SystemExit(
-            f"Missing {metrics_path}. Train it first with scripts/train_model.py."
-        )
-
-    payload = load_json(metrics_path)
-    output_paths: list[Path] = []
-    for split_name in selected_splits(split):
+    payload = load_json(METRICS_DIR / f"{model_name}.json")
+    output_paths = []
+    splits = ["validation", "test"] if split == "all" else [split]
+    for split_name in splits:
         metrics_output = FIGURES_DIR / f"{model_name}_{split_name}_metrics.png"
         confusion_output = FIGURES_DIR / f"{model_name}_{split_name}_confusion_matrix.png"
         plot_run_metric_summary(
@@ -55,7 +43,6 @@ def main() -> None:
     parser.add_argument(
         "--model-name",
         required=True,
-        help="Model run name, for example small_tfidf_logreg_main_b",
     )
     parser.add_argument(
         "--split",

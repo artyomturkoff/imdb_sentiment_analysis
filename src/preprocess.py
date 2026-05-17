@@ -13,6 +13,11 @@ from src.config import NLTK_DATA_DIR
 
 
 NEGATORS = {"no", "not", "nor", "never"}
+VARIANT_SETTINGS = {
+    "a": {"remove_stopwords": False, "lemmatise": False},
+    "b": {"remove_stopwords": True, "lemmatise": False},
+    "c": {"remove_stopwords": True, "lemmatise": True},
+}
 
 _NEGATION_CONTRACTIONS = {
     "ain't": "is not",
@@ -56,33 +61,10 @@ class Preprocessor:
         )
 
 
-def normalize_variant(variant: str) -> str:
-    """Normalise variant names."""
-
-    value = variant.strip().lower()
-    aliases = {
-        "minimal": "a",
-        "required": "b",
-        "required_cleaning": "b",
-        "lemmatised": "c",
-        "lemmatized": "c",
-        "wordnet": "c",
-    }
-    value = aliases.get(value, value)
-    if value not in {"a", "b", "c"}:
-        raise ValueError(f"Unknown preprocessing variant: {variant!r}")
-    return value
-
-
 def get_preprocessor(variant: str) -> Preprocessor:
     """Return one preprocessing variant."""
 
-    variant = normalize_variant(variant)
-    if variant == "a":
-        return Preprocessor(remove_stopwords=False, lemmatise=False)
-    if variant == "b":
-        return Preprocessor(remove_stopwords=True, lemmatise=False)
-    return Preprocessor(remove_stopwords=True, lemmatise=True)
+    return Preprocessor(**VARIANT_SETTINGS[variant.lower()])
 
 
 def expand_negations(text: str) -> str:
@@ -137,29 +119,16 @@ def ensure_nltk_resources() -> None:
     if data_dir not in nltk.data.path:
         nltk.data.path.insert(0, data_dir)
 
-    for resource_paths, package_name in (
-        (("corpora/stopwords", "corpora/stopwords.zip"), "stopwords"),
-        (("corpora/wordnet", "corpora/wordnet.zip"), "wordnet"),
-        (("corpora/omw-1.4", "corpora/omw-1.4.zip"), "omw-1.4"),
-    ):
-        if has_nltk_resource(resource_paths):
-            continue
-        downloaded = nltk.download(package_name, download_dir=data_dir, quiet=True)
-        if not downloaded or not has_nltk_resource(resource_paths):
-            raise RuntimeError(
-                f"NLTK resource {package_name!r} is missing. "
-                f"Download it with: python -m nltk.downloader -d {data_dir} {package_name}"
-            )
-
-
-def has_nltk_resource(resource_paths: tuple[str, ...]) -> bool:
-    for resource_path in resource_paths:
+    resources = {
+        "corpora/stopwords": "stopwords",
+        "corpora/wordnet.zip": "wordnet",
+        "corpora/omw-1.4.zip": "omw-1.4",
+    }
+    for resource_path, package_name in resources.items():
         try:
             nltk.data.find(resource_path)
-            return True
         except LookupError:
-            continue
-    return False
+            nltk.download(package_name, download_dir=data_dir, quiet=True)
 
 
 @lru_cache(maxsize=1)

@@ -10,7 +10,6 @@ from src.config import (
     DATASET_NAME,
     HF_CACHE_DIR,
     LABEL_NAMES,
-    RANDOM_STATE,
     ensure_project_dirs,
     split_path,
 )
@@ -46,12 +45,7 @@ class SubsetData:
 def load_imdb_dataset() -> RawImdbData:
     """Load IMDb reviews from Hugging Face."""
 
-    try:
-        from datasets import load_dataset
-    except ImportError as exc:
-        raise ImportError(
-            'Install project dependencies before loading data: pip install -e ".[dev]"'
-        ) from exc
+    from datasets import load_dataset
 
     ensure_project_dirs()
     imdb = load_dataset(DATASET_NAME, cache_dir=str(HF_CACHE_DIR))
@@ -63,26 +57,16 @@ def load_imdb_dataset() -> RawImdbData:
     )
 
 
-def load_subset_data(
-    subset: str,
-    *,
-    raw: RawImdbData | None = None,
-) -> SubsetData:
+def load_subset_data(subset: str) -> SubsetData:
     """Load one generated subset."""
 
     subset = subset.lower()
-    path = split_path(subset)
-    if not path.exists():
-        raise ValueError(
-            f"Unknown subset {subset!r}. Create it first with scripts/generate_subset.py."
-        )
+    raw = load_imdb_dataset()
+    payload = read_json(split_path(subset))
 
-    raw = raw or load_imdb_dataset()
-    payload = read_json(path)
-
-    train_indices = [int(index) for index in payload["train_indices"]]
-    validation_indices = [int(index) for index in payload["validation_indices"]]
-    test_indices = [int(index) for index in payload["test_indices"]]
+    train_indices = payload["train_indices"]
+    validation_indices = payload["validation_indices"]
+    test_indices = payload["test_indices"]
 
     return SubsetData(
         subset=subset,
@@ -111,12 +95,6 @@ def build_custom_split_payload(
     """Build one split payload."""
 
     train_pool_size = train_size + validation_size
-    if train_pool_size > len(raw.train_labels):
-        raise ValueError(
-            f"Train + validation size is {train_pool_size}, but IMDb train has "
-            f"only {len(raw.train_labels)} labelled reviews."
-        )
-
     train_pool = stratified_subset(
         range(len(raw.train_labels)),
         raw.train_labels,
@@ -148,7 +126,7 @@ def build_custom_split_payload(
         "subset": subset,
         "tier": subset,
         "random_state": random_state,
-        "label_names": {str(key): value for key, value in LABEL_NAMES.items()},
+        "label_names": LABEL_NAMES,
         "counts": {
             "train": len(train_indices),
             "validation": len(validation_indices),
@@ -166,13 +144,11 @@ def stratified_subset(
     labels: list[int],
     size: int,
     *,
-    random_state: int = RANDOM_STATE,
+    random_state: int,
 ) -> list[int]:
     """Take a balanced subset of indices."""
 
-    indices = [int(index) for index in indices]
-    if size > len(indices):
-        raise ValueError(f"Requested {size} examples from only {len(indices)} indices")
+    indices = list(indices)
     if size == len(indices):
         return indices
 

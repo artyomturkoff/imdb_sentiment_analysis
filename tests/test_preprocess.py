@@ -58,7 +58,7 @@ def test_variant_c_adds_lemmatisation(monkeypatch):
     assert cleaned == "not best film story moving"
 
 
-def test_variant_aliases_are_supported(monkeypatch):
+def test_variant_c_aliases_are_not_needed(monkeypatch):
     monkeypatch.setattr(
         preprocess,
         "get_stop_words",
@@ -66,6 +66,6 @@ def test_variant_aliases_are_supported(monkeypatch):
     )
     monkeypatch.setattr(preprocess, "get_lemmatizer", lambda: FakeLemmatizer())
 
-    cleaned = preprocess.get_preprocessor("wordnet")("The films was boring.")
+    cleaned = preprocess.get_preprocessor("c")("The films was boring.")
 
     assert cleaned == "film boring"

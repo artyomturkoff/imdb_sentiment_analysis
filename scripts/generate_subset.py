@@ -11,20 +11,9 @@ from src.data_loader import build_custom_split_payload, load_imdb_dataset, write
 
 
 def parse_test_size(value: str) -> int | None:
-    value = value.strip().lower()
-    if value in {"all", "full"}:
+    if value.lower() in {"all", "full"}:
         return None
-    size = int(value)
-    if size <= 0:
-        raise argparse.ArgumentTypeError("test size must be positive or 'all'")
-    return size
-
-
-def positive_int(value: str) -> int:
-    size = int(value)
-    if size <= 0:
-        raise argparse.ArgumentTypeError("size must be a positive integer")
-    return size
+    return int(value)
 
 
 def run(
@@ -51,10 +40,10 @@ def run(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--subset", required=True, help="Subset name, for example small")
+    parser.add_argument("--subset", required=True)
     parser.add_argument("--random-seed", type=int, default=42)
-    parser.add_argument("--train-size", type=positive_int, required=True)
-    parser.add_argument("--validation-size", type=positive_int, required=True)
+    parser.add_argument("--train-size", type=int, required=True)
+    parser.add_argument("--validation-size", type=int, required=True)
     parser.add_argument("--test-size", type=parse_test_size, required=True)
     args = parser.parse_args()
 

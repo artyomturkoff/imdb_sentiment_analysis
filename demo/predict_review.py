@@ -16,40 +16,21 @@ from src.predict import load_model, predict_sentiment
 def resolve_model_path(model_name: str) -> Path:
     """Resolve a saved model name."""
 
-    path = Path(model_name)
-    if path.name != model_name:
-        raise SystemExit(
-            "Use only the model name, for example: --model small_tfidf_logreg_main_b"
-        )
-
-    if path.suffix == ".joblib":
-        return MODELS_DIR / path.name
+    if model_name.endswith(".joblib"):
+        return MODELS_DIR / model_name
     return MODELS_DIR / f"{model_name}.joblib"
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--text", required=True, help="Raw movie review text to classify")
-    parser.add_argument(
-        "--model",
-        required=True,
-        help="Saved model name, for example small_tfidf_logreg_main_b",
-    )
+    parser.add_argument("--text", required=True)
+    parser.add_argument("--model", required=True)
     args = parser.parse_args()
 
     model_path = resolve_model_path(args.model)
-    if not model_path.exists():
-        raise SystemExit(
-            f"Model not found at {model_path}. Train it with scripts/train_model.py first."
-        )
-
     pipeline = load_model(model_path)
     result = predict_sentiment(args.text, pipeline)
-    confidence = result["confidence"]
-    if confidence is None:
-        print(result["label"])
-    else:
-        print(f"{result['label']} (confidence: {confidence:.4f})")
+    print(f"{result['label']} (confidence: {result['confidence']:.4f})")
 
 
 if __name__ == "__main__":
