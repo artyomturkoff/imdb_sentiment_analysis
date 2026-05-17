@@ -121,8 +121,8 @@ python scripts/generate_subset.py --subset large --random-seed 42 --train-size 2
 Training runs one model at a time:
 
 ```bash
-python scripts/train_model.py --subset small --variant b --model naive_bayes_baseline
-python scripts/train_model.py --subset small --variant b --model tfidf_logreg_main
+python scripts/train_model.py --model naive_bayes_baseline --subset small --variant b 
+python scripts/train_model.py --model tfidf_logreg_main --subset small --variant b 
 ```
 
 Run names use this format:
