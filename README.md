@@ -32,6 +32,7 @@ scripts/generate_subset.py   creates saved train/validation/test splits
 scripts/train_model.py       trains one selected model
 scripts/visualise_model.py   creates figures for one saved run
 scripts/compare_results.py   compares saved runs by one metric
+scripts/export_results_csv.py exports saved metrics to CSV
 demo/predict_review.py       predicts one review with a saved model
 data/splits/                 saved split indices
 models/                      saved sklearn pipelines after training
@@ -193,6 +194,12 @@ Compare all saved result files by one metric:
 
 ```bash
 python scripts/compare_results.py --metric f1 --split test
+```
+
+Export all saved validation and test metrics to one CSV file:
+
+```bash
+python scripts/export_results_csv.py --output results/metrics_summary.csv
 ```
 
 The available comparison metrics are:
