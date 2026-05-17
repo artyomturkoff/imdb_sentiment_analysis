@@ -1,4 +1,4 @@
-"""Train one or both project models."""
+"""Train one project model."""
 
 import argparse
 
@@ -66,17 +66,13 @@ def train_one_model(
     return payload
 
 
-def run(*, subset: str, variant: str, model: str) -> list[dict]:
+def run(*, subset: str, variant: str, model: str) -> dict:
     ensure_project_dirs()
     subset = subset.lower()
     variant = variant.lower()
     subset_data = load_subset_data(subset)
     split_payload = read_json(split_path(subset))
-    model_names = MODEL_FACTORIES if model == "both" else [model]
-    return [
-        train_one_model(subset, variant, model_name, subset_data, split_payload)
-        for model_name in model_names
-    ]
+    return train_one_model(subset, variant, model, subset_data, split_payload)
 
 
 def main() -> None:
@@ -85,15 +81,14 @@ def main() -> None:
     parser.add_argument("--variant", required=True, type=str.lower, choices=("a", "b", "c"))
     parser.add_argument(
         "--model",
-        default="both",
-        choices=("both", "naive_bayes_baseline", "tfidf_logreg_main"),
+        required=True,
+        choices=("naive_bayes_baseline", "tfidf_logreg_main"),
     )
     args = parser.parse_args()
 
-    payloads = run(subset=args.subset, variant=args.variant, model=args.model)
-    for payload in payloads:
-        metric_file = METRICS_DIR / f"{payload['run_id']}.json"
-        print(f"Saved {payload['model_path']} and {metric_file.relative_to(ROOT_DIR)}")
+    payload = run(subset=args.subset, variant=args.variant, model=args.model)
+    metric_file = METRICS_DIR / f"{payload['run_id']}.json"
+    print(f"Saved {payload['model_path']} and {metric_file.relative_to(ROOT_DIR)}")
 
 
 if __name__ == "__main__":

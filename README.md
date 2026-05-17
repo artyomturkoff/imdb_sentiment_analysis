@@ -29,7 +29,7 @@ fine on most modern laptops.
 ```text
 src/                         reusable project code
 scripts/generate_subset.py   creates saved train/validation/test splits
-scripts/train_model.py       trains one or both models
+scripts/train_model.py       trains one selected model
 scripts/visualise_model.py   creates figures for one saved run
 scripts/compare_results.py   compares saved runs by one metric
 demo/predict_review.py       predicts one review with a saved model
@@ -83,7 +83,8 @@ The model card reports a small run with preprocessing variant `b`. To recreate i
 
 ```bash
 python scripts/generate_subset.py --subset small --random-seed 42 --train-size 2000 --validation-size 500 --test-size 5000
-python scripts/train_model.py --subset small --variant b
+python scripts/train_model.py --subset small --variant b --model naive_bayes_baseline
+python scripts/train_model.py --subset small --variant b --model tfidf_logreg_main
 python scripts/visualise_model.py --model-name small_tfidf_logreg_main_b
 python scripts/compare_results.py --metric f1 --split test
 ```
@@ -116,13 +117,7 @@ python scripts/generate_subset.py --subset large --random-seed 42 --train-size 2
 
 ## Train Models
 
-By default, training runs both models:
-
-```bash
-python scripts/train_model.py --subset small --variant b
-```
-
-To train only one model:
+Training runs one model at a time:
 
 ```bash
 python scripts/train_model.py --subset small --variant b --model naive_bayes_baseline
