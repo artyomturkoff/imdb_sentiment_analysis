@@ -1,37 +1,13 @@
-# Python files made while running the code
+# Python runtime files
 __pycache__/
 *.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
 .pytest_cache/
-.coverage
-htmlcov/
 
-# Local Python environments
-.venv
-venv/
-env/
+# Local Python environment
+.venv/
 
-# Secrets and local settings
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.p12
-*.p8
-*.crt
-secrets/
-credentials/
-token.json
-*token*.json
-
-# Local OS and editor files
+# Local OS files
 .DS_Store
-.vscode/
-.idea/
 
 # Dataset files and local caches
 data/raw/
@@ -40,19 +16,8 @@ sandbox.py
 # Generated model files
 models/*
 !models/.gitkeep
-*.joblib
-*.pkl
-*.pickle
-checkpoints/
-mlruns/
-wandb/
 
 # Results from local experiment runs
 results/*
 !results/.gitkeep
 !results/README.md
-
-# Logs and temporary files
-*.log
-*.tmp
-*.bak
