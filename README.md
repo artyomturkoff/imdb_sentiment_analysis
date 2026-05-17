@@ -16,9 +16,12 @@ I used two classical machine learning models:
 
 There are also three preprocessing variants:
 
-- `a`: basic text cleaning
-- `b`: basic cleaning and stop-word removal, but keeping `not`, `no`, `nor`, and `never`
-- `c`: variant `b` plus WordNet lemmatisation
+- `a`: basic text cleaning: HTML tags/entities are removed, text is lowercased, negation
+  contractions are expanded, punctuation/numbers are removed, and extra whitespace is
+  normalised
+- `b`: variant `a` plus English stop-word removal, but keeping negation words: `not`,
+  `no`, `nor`, and `never`
+- `c`: variant `b` plus WordNet lemmatisation without POS tagging
 
 The code was run on a MacBook with an Apple M2 chip and 16 GB memory. This is not a hard
 requirement, but it gives some context for running time. The experiments should be
