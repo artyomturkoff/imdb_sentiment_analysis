@@ -139,6 +139,48 @@ small_tfidf_logreg_main_b
 
 Each run saves a `.joblib` model and one JSON metrics file.
 
+## Saved Model Pipeline
+
+The saved `.joblib` file is not a standalone compiled binary. It is a saved sklearn
+`Pipeline` object. For example, `medium_tfidf_logreg_main_b.joblib` contains:
+
+```text
+variant b preprocessor -> fitted TF-IDF vectorizer -> fitted Logistic Regression model
+```
+
+Training, validation, test evaluation, and demo prediction all pass raw review text into
+this same pipeline. The preprocessor is applied inside the vectorizer, so the classifier is
+trained and evaluated on vectorized preprocessed text, not on the original raw string and
+not on raw plus preprocessed text together.
+
+When a saved model is loaded, Python still needs the project code and dependencies used by
+the pipeline. In particular, old saved models expect `src.preprocess.Preprocessor` and its
+text-cleaning behaviour to exist. They also need compatible versions of `scikit-learn`,
+`joblib`, and, for variants using stop words or lemmatisation, `nltk` resources. If the
+preprocessing code is renamed or its behaviour is changed, old `.joblib` files may load
+differently or fail. After changing preprocessing logic, the safest approach is to retrain
+the affected models.
+
+## Extending the Experiments
+
+To add another preprocessing variant, edit:
+
+- `src/preprocess.py`: add the new variant settings and preprocessing logic.
+- `scripts/train_model.py`: add the new variant letter to the `--variant` choices.
+- `tests/test_preprocess.py`: add or update preprocessing tests.
+- `README.md` and `MODEL_CARD.md`: update the experiment description if the new variant is
+  used in reported results.
+
+To add another learning model, edit:
+
+- `src/features.py`: create the new sklearn pipeline.
+- `scripts/train_model.py`: add the new model name to `MODEL_FACTORIES` and `--model`
+  choices.
+- `src/evaluate.py`: update plotting colours, and adjust scoring if the model does not
+  support `predict_proba`.
+- `README.md` and `MODEL_CARD.md`: update the model list and reproduction commands if the
+  new model is part of the final experiment.
+
 ## Visualise and Compare
 
 Create figures for one model:
