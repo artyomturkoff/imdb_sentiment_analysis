@@ -17,8 +17,3 @@ sandbox.py
 # Generated model files
 models/*
 !models/.gitkeep
-
-# Results from local experiment runs
-results/*
-!results/.gitkeep
-!results/README.md
